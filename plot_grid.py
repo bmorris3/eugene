@@ -3,10 +3,8 @@ import matplotlib.pyplot as plt
 from corner import corner
 from glob import glob
 
-R0_grid = np.linspace(0.7, 4, 15)
+R0_grid = np.linspace(0.7, 8, 15)
 k_grid = np.logspace(-2, 1, 15)
-
-
 
 # R0_grid = np.arange(2, 5, 2)
 # k_grid = np.logspace(-2, 1, 2)
@@ -40,9 +38,10 @@ if samples_plot:
     samples[:, 1] = np.log10(samples[:, 1])
 
     hist_kwargs = dict(plot_contours=False,
-                       no_fill_contours=False, bins=10)
+                       no_fill_contours=False, bins=6)
 
-    corner(samples, labels=['$\mathcal{R}_0$', '$\log k$', '$\sigma$', 'seed'],
+    corner(samples, labels=['$\mathcal{R}_0$', '$\log k$', '$D$', '$n$'],
+                            #'$\sigma$', 'seed'],
            smooth=True, contour=False, **hist_kwargs)
     #plt.scatter(samples[:, 0], samples[:, 1], marker='.')
     #plt.xlabel('sigmas')

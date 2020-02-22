@@ -6,12 +6,12 @@ from itertools import zip_longest
 
 gamma_shape = 2
 
-R0_grid = np.linspace(0.7, 4, 15)
+R0_grid = np.linspace(0.7, 8, 15)
 k_grid = np.logspace(-2, 1, 15)
 # seed = 1
 max_cases = 1e4
 max_time = 90
-n_trials = 500
+n_trials = 1000
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -37,7 +37,7 @@ def compute(R0_grid):
         for j, k in enumerate(k_grid):
             accepted = []
             for n in range(n_trials):
-                it_sigma = 7 + 7 * np.random.rand()
+                it_sigma = 7 + 53 * np.random.rand()
                 seed = np.random.randint(1, 51)
                 times = [0]
                 t = copy(times)
