@@ -48,12 +48,13 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
                 D = D_min + (D_max - D_min) * np.random.rand()
                 n = np.random.randint(n_min, n_max)
                 times = [0]
+                times_counter = 1
                 t = copy(times)
                 cases = copy(n)
                 incidence = [1]
                 t_maxes = [0]
 
-                while (cases > 0) and (len(times) < max_cases):
+                while (cases > 0) and (times_counter < max_cases):
                     secondary = nbinom.rvs(n=k, p=k / (k + R0), size=cases)
 
                     # Vectorized approach (optimized for speed in Python)
@@ -64,8 +65,9 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
                                         mask=secondary[:, None] <= inds)
                     times_in_bounds = ((t_new.data < max_time) &
                                        np.logical_not(t_new.mask))
-                    times.extend(t_new[times_in_bounds].tolist())
+                    # times.extend(t_new[times_in_bounds].tolist())
                     cases = np.count_nonzero(times_in_bounds)
+                    times_counter += cases
                     t = t_new[times_in_bounds].copy()
                     incidence.append(cases)
                     t_maxes.append(t_new.mean())
