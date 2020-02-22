@@ -6,12 +6,12 @@ from itertools import zip_longest
 
 gamma_shape = 2
 
-R0_grid = np.arange(0.8, 5, 0.2)
-k_grid = np.logspace(-2, 1, 10)
+R0_grid = np.linspace(0.7, 4, 15)
+k_grid = np.logspace(-2, 1, 15)
 # seed = 1
-max_cases = 5e4
+max_cases = 1e4
 max_time = 90
-n_trials = 100
+n_trials = 500
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -87,7 +87,7 @@ def compute(R0_grid):
             accept_k.append(accepted_fraction)
         accepted_grid.append(accept_k)
     samples = np.vstack([R0_chain, k_chain, sigma_chain, seed_chain]).T
-    np.save('samples{0}.npy'.format(R0_grid[0]), samples)
+    np.save('samples/samples{0}.npy'.format(R0_grid[0]), samples)
 
 # https://stackoverflow.com/a/15143994
 executor = cf.ProcessPoolExecutor(max_workers=8)
