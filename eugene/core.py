@@ -4,7 +4,7 @@ from concurrent import futures as cf
 import numpy as np
 from scipy.stats import gamma, nbinom
 
-__all__ = ['abc']
+__all__ = ['abc', 'compute', 'simulate_outbreak']
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -25,6 +25,64 @@ def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
     futures = [executor.submit(compute, group, **parameters)
                for group in grouper(R0_grid, n_grid_points_per_process)]
     cf.wait(futures)
+
+
+def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed,
+                      max_cases):
+    """
+    Simulate an outbreak.
+
+    Parameters
+    ----------
+    R0 : float
+    k : float
+    n : float
+    D : float
+    gamma_shape : float
+    max_time : float
+    days_elapsed : float
+    max_cases : float
+
+    Returns
+    -------
+    times : `~numpy.ndarray`
+        Times of incidence measurements
+    cumulative_incidence : `~numpy.ndarray`
+        Cumulative incidence (total cases) at each time
+    """
+    times = [0]
+    times_counter = copy(n)
+    t = copy(times)
+    cases = copy(n)
+    incidence = [n]
+    t_maxes = [0]
+
+    while (cases > 0) and (np.max(t) < days_elapsed) and (
+            times_counter < max_cases):
+        secondary = nbinom.rvs(n=k, p=k / (k + R0), size=cases)
+
+        # Vectorized approach (optimized for speed in Python)
+        inds = np.arange(0, secondary.max())
+        gamma_size = (secondary.max(), secondary.shape[0])
+        t_new = np.ma.array(t + gamma.rvs(D / gamma_shape,
+                                          size=gamma_size),
+                            mask=secondary[:, None] <= inds)
+        times_in_bounds = ((t_new.data < max_time) &
+                           np.logical_not(t_new.mask))
+        # times.extend(t_new[times_in_bounds].tolist())
+        cases = np.count_nonzero(times_in_bounds)
+        times_counter += cases
+        t = t_new[times_in_bounds].copy()
+        if cases > 0:
+            t_maxes.append(t.max())
+            incidence.append(cases)
+
+    # times = np.array(times)
+    # total_incidence = len(times)
+    incidence = np.array(incidence)
+    cum_inc = incidence.cumsum()
+    t_maxes = np.array(t_maxes)
+    return t_maxes, cum_inc
 
 
 def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
@@ -56,37 +114,10 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                 days_elapsed = (days_elapsed_min + (days_elapsed_max -
                                                     days_elapsed_min) *
                                 np.random.rand())
-                times = [0]
-                times_counter = copy(n)
-                t = copy(times)
-                cases = copy(n)
-                incidence = [n]
-                t_maxes = [0]
 
-                while (cases > 0) and (np.max(t) < days_elapsed_max) and (
-                        times_counter < max_cases):
-                    secondary = nbinom.rvs(n=k, p=k / (k + R0), size=cases)
-
-                    # Vectorized approach (optimized for speed in Python)
-                    inds = np.arange(0, secondary.max())
-                    gamma_size = (secondary.max(), secondary.shape[0])
-                    t_new = np.ma.array(t + gamma.rvs(D / gamma_shape,
-                                                      size=gamma_size),
-                                        mask=secondary[:, None] <= inds)
-                    times_in_bounds = ((t_new.data < max_time) &
-                                       np.logical_not(t_new.mask))
-                    # times.extend(t_new[times_in_bounds].tolist())
-                    cases = np.count_nonzero(times_in_bounds)
-                    times_counter += cases
-                    t = t_new[times_in_bounds].copy()
-                    incidence.append(cases)
-                    t_maxes.append(t_new.mean())
-
-                # times = np.array(times)
-                # total_incidence = len(times)
-                incidence = np.array(incidence)
-                cum_inc = incidence.cumsum()
-                t_maxes = np.array(t_maxes)
+                t_maxes, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
+                                                     max_time, days_elapsed,
+                                                     max_cases)
 
                 if t_maxes.max() >= days_elapsed:
                     terminal_cum_inc = 10**np.interp(days_elapsed, t_maxes,
