@@ -57,13 +57,14 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                                                     days_elapsed_min) *
                                 np.random.rand())
                 times = [0]
-                times_counter = 1
+                times_counter = copy(n)
                 t = copy(times)
                 cases = copy(n)
-                incidence = [1]
+                incidence = [n]
                 t_maxes = [0]
 
-                while (cases > 0) and (times_counter < max_cases):
+                while (cases > 0) and (np.max(t) < days_elapsed_max) and (
+                        times_counter < max_cases):
                     secondary = nbinom.rvs(n=k, p=k / (k + R0), size=cases)
 
                     # Vectorized approach (optimized for speed in Python)

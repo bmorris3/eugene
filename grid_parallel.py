@@ -3,7 +3,7 @@ from eugene import abc
 
 params = dict(
     # Grid of R0 and k parameters to iterate over
-    R0_grid = np.logspace(np.log10(0.7), np.log10(20), 15),
+    R0_grid = np.logspace(np.log10(0.7), np.log10(20), 50),
     k_grid = np.logspace(-2, 1, 15),
 
     # Maximum number of cases to run the simulation through (should be greater
@@ -38,7 +38,7 @@ params = dict(
 
     # Computer parameters
     n_processes = 8,
-    n_grid_points_per_process = 2,
+    n_grid_points_per_process = 5,
 
     # Formatting string for naming simulation outputs
     samples_path = 'samples/samples{0}.npy'
