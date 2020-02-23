@@ -1,0 +1,14 @@
+name: eugene
+
+channels:
+    - astropy
+
+dependencies:
+    - python>=3.7
+    - numpy
+    - matplotlib
+    - astropy
+    - Cython
+    - pip:
+       - scipy
+       - corner
