@@ -10,5 +10,6 @@ dependencies:
     - astropy
     - Cython
     - pip:
+       - sphinx-astropy
        - scipy
        - corner
