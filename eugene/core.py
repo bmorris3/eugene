@@ -27,9 +27,10 @@ def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
     cf.wait(futures)
 
 
-def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
-            gamma_shape, max_time, days_elapsed, min_number_cases,
-            max_number_cases, samples_path):
+def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
+            gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
+            days_elapsed_max, min_number_cases, max_number_cases,
+            samples_path):
 
     accepted_grid = []
 
@@ -37,6 +38,8 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
     n_chain = []
     R0_chain = []
     k_chain = []
+    days_elapsed_chain = []
+    gamma_shape_chain = []
 
     R0_grid = np.array(R0_grid)
 
@@ -44,9 +47,15 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
         accept_k = []
         for j, k in enumerate(k_grid):
             accepted = []
-            for n in range(n_trials):
+            for n in range(trials):
                 D = D_min + (D_max - D_min) * np.random.rand()
                 n = np.random.randint(n_min, n_max)
+                gamma_shape = (gamma_shape_min + (gamma_shape_max -
+                                                  gamma_shape_min) *
+                               np.random.rand())
+                days_elapsed = (days_elapsed_min + (days_elapsed_max -
+                                                    days_elapsed_min) *
+                                np.random.rand())
                 times = [0]
                 times_counter = 1
                 t = copy(times)
@@ -91,6 +100,8 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
                         n_chain.append(n)
                         R0_chain.append(R0)
                         k_chain.append(k)
+                        days_elapsed_chain.append(days_elapsed)
+                        gamma_shape_chain.append(gamma_shape)
 
             if len(accepted) > 0:
                 accepted_fraction = np.count_nonzero(accepted) / len(accepted)
@@ -101,5 +112,6 @@ def compute(R0_grid, k_grid, n_trials, D_min, D_max, n_min, n_max, max_cases,
 
         accepted_grid.append(accept_k)
 
-    samples = np.vstack([R0_chain, k_chain, D_chain, n_chain]).T
+    samples = np.vstack([R0_chain, k_chain, D_chain, n_chain,
+                         days_elapsed_chain, gamma_shape_chain]).T
     np.save(samples_path.format(R0_grid[0]), samples)

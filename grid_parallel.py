@@ -14,21 +14,23 @@ params = dict(
     max_time = 90,   # days
 
     # Number of stochastic trials to run at each grid-point
-    n_trials = 1000,
+    trials = 1000,
 
-    # Number of cases on January 18, 2020
+    # Days elapsed since zoonotic transmission
+    days_elapsed_min = 52-7,  # days
+    days_elapsed_max = 52+7,  # days
+
+    # Number of cases after ``days_elapsed``
     min_number_cases = 1000,  # cases
     max_number_cases = 9700,  # cases
 
     # Initial number of index cases n (day-zero cases)
     n_min = 1,   # cases
-    n_max = 51,  # cases
-
-    # Days elapsed since zoonotic transmission
-    days_elapsed = 52,  # days
+    n_max = 100,  # cases
 
     # Generation interval/Gamma function shape parameter
-    gamma_shape = 2,
+    gamma_shape_min = 1,
+    gamma_shape_max = 5,
 
     # Generation time interval D
     D_min = 7,   # days
@@ -42,7 +44,7 @@ params = dict(
     samples_path = 'samples/samples{0}.npy'
 )
 
-total_trials = (params['n_trials'] * params['R0_grid'].shape[0] *
+total_trials = (params['trials'] * params['R0_grid'].shape[0] *
                 params['k_grid'].shape[0])
 print(f'Total number of simulations triggered: {total_trials}')
 

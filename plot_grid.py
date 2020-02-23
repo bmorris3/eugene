@@ -6,7 +6,7 @@ from glob import glob
 R0_grid = np.logspace(np.log10(0.7), np.log10(20), 15)
 k_grid = np.logspace(-2, 1, 15)
 
-red_plot = True
+red_plot = False
 samples_plot = True
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
@@ -33,15 +33,29 @@ if red_plot:
     fig.savefig('plots/grid.pdf', bbox_inches='tight')
     plt.show()
 
+key_text = """Key:
+$\log \mathcal{R}_0$: Reproduction number
+$\log k$: Dispersion factor
+$D$: Generation time interval [days]
+$n$: Number of index cases
+$\Delta t$: Time since index case [days]
+$\\alpha$: Gamma function shape parameter"""
+
+
 if samples_plot:
 
     samples[:, 0] = np.log10(samples[:, 0])
     samples[:, 1] = np.log10(samples[:, 1])
 
     hist_kwargs = dict(plot_contours=False, plot_datapoints=False,
-                       no_fill_contours=False, bins=5)
+                       no_fill_contours=False, bins=6)
 
-    corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', '$n$'],
+    corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', '$n$',
+                            '$\Delta t$', '$\\alpha$'],
            smooth=True, contour=False, **hist_kwargs)
+
+    plt.annotate(key_text, xy=(0.55, 0.8), fontsize=18,
+                 ha='left', va='bottom', xycoords='figure fraction')
+
     plt.savefig('plots/corner.pdf', bbox_inches='tight')
     plt.show()
