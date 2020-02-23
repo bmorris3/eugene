@@ -1,11 +1,15 @@
 eugene
 ------
-
-Probing the corona(virus).
+.. image:: https://readthedocs.org/projects/eugene/badge/?version=latest
+    :target: https://eugene.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
+
+Probing the coronavirus COVID-19 with Approximate Bayesian Computation in
+Python.
 
 
 License
@@ -23,7 +27,8 @@ Contributing
 
 We love contributions! fleck is open source, built on open source, and we'd love
 to have you in our community. To contribute to ``eugene``, please follow the
-`Astropy dev guidelines <https://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
+`Astropy dev guidelines
+<https://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
 to make a code contribution. Please report any issues or requests for support
 via the
 `GitHub Issue tracker <https://github.com/bmorris3/eugene/issues>`_.
