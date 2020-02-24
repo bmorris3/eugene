@@ -34,7 +34,7 @@ specify those parameters in code like so:
         D = 10,
         gamma_shape = 2,
         max_time = 90,
-        days_elapsed = 52,
+        days_elapsed_max = 52,
         max_cases = 1e4
     )
 
@@ -69,7 +69,7 @@ Now we can simulate 100 outbreaks with these initial parameters:
         D = 10,
         gamma_shape = 2,
         max_time = 90,
-        days_elapsed = 52,
+        days_elapsed_max = 52,
         max_cases = 1e4
     )
 

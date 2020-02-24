@@ -40,7 +40,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     D : float
     gamma_shape : float
     max_time : float
-    days_elapsed : float
+    days_elapsed_max : float
     max_cases : float
 
     Returns
@@ -55,7 +55,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     t = np.array(times)
     cases = copy(n)
     incidence = [n]
-    t_maxes = [0]
+    t_mins = [0]
 
     while (cases > 0) and (t.min() < days_elapsed_max) and (
             cumulative_incidence < max_cases):
@@ -74,13 +74,13 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
         cumulative_incidence += cases
         t = t_new[times_in_bounds].copy()
         if cases > 0:
-            t_maxes.append(t.min())
+            t_mins.append(t.min())
             incidence.append(cases)
 
     incidence = np.array(incidence)
     epidemic_curve = incidence.cumsum()
-    t_maxes = np.array(t_maxes)
-    return t_maxes, epidemic_curve
+    t_mins = np.array(t_mins)
+    return t_mins, epidemic_curve
 
 
 def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
@@ -113,13 +113,12 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                                                     days_elapsed_min) *
                                 np.random.rand())
 
-                t_maxes, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
+                t_mins, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
                                                      max_time, days_elapsed,
                                                      max_cases)
 
-                if t_maxes.max() >= days_elapsed:
-                    terminal_cum_inc = 10**np.interp(days_elapsed, t_maxes,
-                                                     np.log10(cum_inc))
+                if t_mins.max() >= days_elapsed:
+                    terminal_cum_inc = cum_inc[-1]
 
                     accept = (min_number_cases < terminal_cum_inc <
                               max_number_cases)
