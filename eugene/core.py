@@ -109,19 +109,26 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                 gamma_shape = (gamma_shape_min + (gamma_shape_max -
                                                   gamma_shape_min) *
                                np.random.rand())
-                days_elapsed = (days_elapsed_min + (days_elapsed_max -
-                                                    days_elapsed_min) *
-                                np.random.rand())
+                days_elapsed = (max(days_elapsed_min) +
+                                (max(days_elapsed_max) - max(days_elapsed_min)
+                                 ) * np.random.rand())
 
                 t_mins, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
-                                                     max_time, days_elapsed,
-                                                     max_cases)
+                                                    max_time, days_elapsed,
+                                                    max_cases)
 
                 if t_mins.max() >= days_elapsed:
-                    terminal_cum_inc = cum_inc[-1]
+                    delta_t = (np.array(days_elapsed_min) -
+                               max(days_elapsed_min))
+                    cases_at_measurement_times = np.interp(days_elapsed +
+                                                           delta_t,
+                                                           t_mins, cum_inc)
 
-                    accept = (min_number_cases < terminal_cum_inc <
-                              max_number_cases)
+                    accept = ((np.asarray(min_number_cases) <
+                               cases_at_measurement_times) &
+                              (cases_at_measurement_times <
+                               np.asarray(max_number_cases))).all()
+
                     accepted.append(accept)
 
                     if accept:
