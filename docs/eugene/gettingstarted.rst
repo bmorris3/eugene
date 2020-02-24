@@ -16,9 +16,9 @@ At the core of ``eugene`` lies a simple outbreak model, which starts with
 number of index cases :math:`n`. The user must also specify
 :math:`\mathcal{R}_0`, :math:`k`, the generation time between incidences
 :math:`D`, the shape of the Gamma distribution parameterized by parameter
-``gamma_shape``, maximum number of days to simulate ``days_elapsed`` and the
-maximum number of cases beyond which to stop simulating ``max_cases``. We can
-specify those parameters in code like so:
+``gamma_shape``, maximum number of days to simulate ``days_elapsed_max`` and
+the maximum number of cases beyond which to stop simulating ``max_cases``. We
+can specify those parameters in code like so:
 
 .. code-block:: python
 
