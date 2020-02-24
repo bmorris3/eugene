@@ -47,7 +47,8 @@ for j in range(R0_grid.shape[0]):
                    np.asarray(max_number_cases))).all()
         cax = ax.semilogy(times, cumulative_incidence, '.-',
                           color=cmap(R0_grid[j]),
-                          alpha=1.0 if accept else 0.25)
+                          alpha=1.0 if accept else 0.25,
+                          zorder=1 if not accept else 5)
 
 plot_kwargs = dict(fmt='s', color='k', zorder=10, ecolor='k')
 ax.errorbar(48, 2890, xerr=14, yerr=[[2700], [2700]], **plot_kwargs)

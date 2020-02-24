@@ -51,7 +51,7 @@ $\Delta t$: Time since index case [days]
 $\\alpha$: Gamma function shape parameter"""
 
 std_bin_size = 15
-bins = [std_bin_size, 5, std_bin_size, std_bin_size, std_bin_size,
+bins = [std_bin_size, 10, std_bin_size, std_bin_size, std_bin_size,
         std_bin_size]
 
 if samples_plot:

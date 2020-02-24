@@ -114,8 +114,8 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                                  ) * np.random.rand())
 
                 t_mins, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
-                                                     max_time, days_elapsed,
-                                                     max_cases)
+                                                    max_time, days_elapsed,
+                                                    max_cases)
 
                 if t_mins.max() >= days_elapsed:
                     delta_t = (np.array(days_elapsed_min) -
