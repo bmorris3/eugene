@@ -17,12 +17,12 @@ params = dict(
     trials = 1000,
 
     # Days elapsed since zoonotic transmission
-    days_elapsed_min = 52-7,  # days
-    days_elapsed_max = 52+7,  # days
+    days_elapsed_min = [46-7, 52-7],  # days
+    days_elapsed_max = [46+7, 52+7],  # days
 
     # Number of cases after ``days_elapsed``
-    min_number_cases = 1000,  # cases
-    max_number_cases = 9700,  # cases
+    min_number_cases = [190, 1000],  # cases
+    max_number_cases = [5590, 9700],  # cases
 
     # Initial number of index cases n (day-zero cases)
     n_min = 1,   # cases
@@ -44,8 +44,9 @@ params = dict(
     samples_path = 'samples/samples{0}.npy'
 )
 
-total_trials = (params['trials'] * params['R0_grid'].shape[0] *
-                params['k_grid'].shape[0])
-print(f'Total number of simulations triggered: {total_trials}')
+if __name__ == '__main__':
+    total_trials = (params['trials'] * params['R0_grid'].shape[0] *
+                    params['k_grid'].shape[0])
+    print(f'Total number of simulations triggered: {total_trials}')
 
-abc(**params)
+    abc(**params)

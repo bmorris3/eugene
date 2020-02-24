@@ -5,16 +5,18 @@ from matplotlib.colors import Normalize
 
 from eugene import simulate_outbreak
 
+from grid_parallel import params
+
 np.random.seed(2019)
 
 fig, ax = plt.subplots(figsize=(4, 3))
 
-R0_grid = np.linspace(0.7, 3, 10)
+R0_grid = np.linspace(0.7, 2.5, 10)
 
 cmap = lambda x: plt.cm.viridis((x - R0_grid.min())/R0_grid.ptp())
 
 for j in range(R0_grid.shape[0]):
-    for i in range(10):
+    for i in range(20):
         parameters = dict(
             R0=R0_grid[j],
             k=1,
@@ -28,15 +30,28 @@ for j in range(R0_grid.shape[0]):
 
         times, cumulative_incidence = simulate_outbreak(**parameters)
 
-        inc_at_t = 10**np.interp([52-7, 52+7], times,
-                                 np.log10(cumulative_incidence))
+        days_elapsed_min = params['days_elapsed_min']
+        days_elapsed = parameters['days_elapsed_max']
+        min_number_cases = params['min_number_cases']
+        max_number_cases = params['max_number_cases']
 
+        delta_t = (np.array(days_elapsed_min) -
+                   max(days_elapsed_min))
+        cases_at_measurement_times = np.interp(days_elapsed +
+                                               delta_t,
+                                               times, cumulative_incidence)
+
+        accept = ((np.asarray(min_number_cases) <
+                   cases_at_measurement_times) &
+                  (cases_at_measurement_times <
+                   np.asarray(max_number_cases))).all()
         cax = ax.semilogy(times, cumulative_incidence, '.-',
                           color=cmap(R0_grid[j]),
-                          alpha=1.0 if (1000 < inc_at_t).any() &
-                                       (inc_at_t < 9700).any() else 0.3)
+                          alpha=1.0 if accept else 0.25)
 
-ax.errorbar(52, 5000, xerr=14, yerr=[[4000], [4700]], fmt='s', color='k')
+plot_kwargs = dict(fmt='s', color='k', zorder=10, ecolor='k')
+ax.errorbar(48, 2890, xerr=14, yerr=[[2700], [2700]], **plot_kwargs)
+ax.errorbar(52, 5000, xerr=14, yerr=[[4000], [4700]], **plot_kwargs)
 
 norm = Normalize(vmin=R0_grid.min(), vmax=R0_grid.max())
 cbar = plt.colorbar(mappable=ScalarMappable(norm=norm, cmap=plt.cm.viridis),
