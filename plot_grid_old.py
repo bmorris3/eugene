@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 from corner import corner
 from glob import glob
 
-R0_grid = np.logspace(np.log10(0.7), np.log10(20), 15)
+R0_grid = np.logspace(np.log10(0.7), np.log10(20), 50)
 k_grid = np.logspace(-2, 1, 15)
 
-red_plot = False
-samples_plot = True
+red_plot = True
+samples_plot = False
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
 

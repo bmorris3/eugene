@@ -85,3 +85,8 @@ Now we can simulate 100 outbreaks with these initial parameters:
     ax.set_ylabel('Cumulative Incidence')
     fig.tight_layout()
     plt.show()
+
+Every epidemic curve starts at incidence of unity, and the cumulative incidence
+grows roughly exponentially, sometimes terminating with zero new cases before
+it reaches the end of the simulation domain (set by the ``days_elapsed``
+parameter).
