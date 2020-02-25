@@ -1,3 +1,4 @@
+---
 language: python
 
 # We need a full clone to make sure setuptools_scm works properly
@@ -19,10 +20,10 @@ addons:
 
 
 stages:
-   # Do the style check and a single test job, don't proceed if it fails
-   - name: Initial tests
-   # Test docs, astropy dev, and without optional dependencies
-   - name: Comprehensive tests
+    # Do the style check and a single test job, don't proceed if it fails
+    - name: Initial tests
+    # Test docs, astropy dev, and without optional dependencies
+    - name: Comprehensive tests
 
 
 env:
@@ -69,13 +70,13 @@ matrix:
 
 
     allow_failures:
-         Do a PEP8 test with flake8
-         (do allow to fail unless your code completely compliant)
-         - os: linux
-           python: 3.8
-           name: Code style checks
-           stage: Initial tests
-           env: TOXENV=codestyle
+        # Do a PEP8 test with flake8
+        # (do allow to fail unless your code completely compliant)
+        - os: linux
+          python: 3.8
+          name: Code style checks
+          stage: Initial tests
+          env: TOXENV=codestyle
 
 install:
 
