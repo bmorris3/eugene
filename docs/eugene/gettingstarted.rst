@@ -28,14 +28,14 @@ can specify those parameters in code like so:
     np.random.seed(2020)
 
     parameters = dict(
-        R0 = 2,
-        k = 1,
-        n = 1,
-        D = 10,
-        gamma_shape = 2,
-        max_time = 90,
-        days_elapsed_max = 52,
-        max_cases = 1e4
+        R0 = 2,  # reproduction number
+        k = 1,   # overdispersion factor
+        n = 1,   # number of index cases
+        D = 10,  # generation time interval
+        gamma_shape = 2,  # gamma function shape parameter
+        max_time = 90,    # maximum simulation time
+        days_elapsed_max = 52,  # number of days from index case to measurement
+        max_cases = 1e4   # maximum number of cases to simulate
     )
 
 Now we can simulate 100 outbreaks with these initial parameters:
