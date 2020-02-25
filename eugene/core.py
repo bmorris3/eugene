@@ -28,7 +28,7 @@ def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
 
 
 def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
-                      max_cases):
+                      max_cases, seed=None):
     """
     Simulate an outbreak.
 
@@ -42,7 +42,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     max_time : float
     days_elapsed_max : float
     max_cases : float
-
+    seed :
     Returns
     -------
     times : `~numpy.ndarray`
@@ -120,13 +120,13 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                 if t_mins.max() >= days_elapsed:
                     delta_t = (np.array(days_elapsed_min) -
                                max(days_elapsed_min))
-                    cases_at_measurement_times = np.interp(days_elapsed +
-                                                           delta_t,
-                                                           t_mins, cum_inc)
+                    cases_at_obs_times = 10**np.interp(days_elapsed +
+                                                       delta_t, t_mins,
+                                                       np.log10(cum_inc))
 
                     accept = ((np.asarray(min_number_cases) <
-                               cases_at_measurement_times) &
-                              (cases_at_measurement_times <
+                               cases_at_obs_times) &
+                              (cases_at_obs_times <
                                np.asarray(max_number_cases))).all()
 
                     accepted.append(accept)
