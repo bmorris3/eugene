@@ -28,7 +28,7 @@ def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
 
 
 def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
-                      max_cases, seed=None):
+                      max_cases):
     """
     Simulate an outbreak.
 

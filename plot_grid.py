@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 from corner import corner
 from glob import glob
 
-R0_grid = np.logspace(np.log10(0.7), np.log10(10), 30)
-k_grid = np.logspace(-2, 1, 10)
+from grid_parallel import params
+
+R0_grid = params['R0_grid']
+k_grid = params['k_grid']
+trials = params['trials']
 
 red_plot = True
 samples_plot = True
@@ -15,27 +18,21 @@ lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
 print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
 
 if red_plot:
-    kx = np.arange(0, len(k_grid), 2)
-    ry = np.arange(0, len(R0_grid) + 2, 4)
-
     hist2d, xedges, yedges = np.histogram2d(np.log10(samples[:, 0]),
                                             np.log10(samples[:, 1]),
                                             bins=[R0_grid.shape[0],
                                                   k_grid.shape[0]])
 
-    # extent = [kx.min(), kx.max(), ry.min(), ry.max()]
     fig, ax = plt.subplots(figsize=(5, 4))
-    # cax = ax.imshow(hist2d, extent=extent, origin='lower', aspect=0.3,
-    #                 cmap=plt.cm.Reds)
 
     X, Y = np.meshgrid(R0_grid, k_grid)
 
-    im = ax.pcolor(Y, X, hist2d.T, cmap=plt.cm.Reds)
+    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
 
-    cbar = plt.colorbar(im, label='Posterior density')
+    cbar = plt.colorbar(im, label='Acceptance fraction')
 
     ax.set(xlabel='$k$', ylabel='$\mathcal{R}_0$')
     fig.savefig('plots/grid.pdf', bbox_inches='tight')
@@ -50,8 +47,8 @@ $n$: Number of index cases
 $\Delta t$: Time since index case [days]
 $\\alpha$: Gamma function shape parameter"""
 
-std_bin_size = 15
-bins = [std_bin_size, 10, std_bin_size, std_bin_size, std_bin_size,
+std_bin_size = 25
+bins = [std_bin_size, 10, std_bin_size, 20, std_bin_size,
         std_bin_size]
 
 if samples_plot:

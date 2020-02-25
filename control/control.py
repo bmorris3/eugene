@@ -13,6 +13,8 @@ t0, t1 = 40, 50
 inc0, inc1 = 10 ** np.interp([t0, t1], times, np.log10(inc))
 err0, err1 = 500, 2000
 
+#np.savetxt('../eugene/data/control.txt', np.vstack([times, inc]).T)
+
 params = dict(
     # Grid of R0 and k parameters to iterate over
     R0_grid = np.logspace(np.log10(0.7), np.log10(10), 10),

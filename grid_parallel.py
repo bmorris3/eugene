@@ -3,8 +3,8 @@ from eugene import abc
 
 params = dict(
     # Grid of R0 and k parameters to iterate over
-    R0_grid = np.logspace(np.log10(0.7), np.log10(10), 30),
-    k_grid = np.logspace(-2, 1, 10),
+    R0_grid = np.logspace(np.log10(0.7), np.log10(10), 50),
+    k_grid = np.logspace(-2, 1, 30),
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
