@@ -1,5 +1,10 @@
 eugene
 ------
+
+.. image:: https://travis-ci.org/bmorris3/eugene.svg?branch=master
+    :target: https://travis-ci.org/bmorris3/eugene
+    :alt: Testing status
+
 .. image:: https://readthedocs.org/projects/eugene/badge/?version=latest
     :target: https://eugene.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
