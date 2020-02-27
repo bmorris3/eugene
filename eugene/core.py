@@ -4,9 +4,45 @@ from concurrent import futures as cf
 
 import numpy as np
 from scipy.stats import gamma, nbinom
-from numba import jit
+from numba import njit
+import math
 
 __all__ = ['abc', 'compute', 'simulate_outbreak']
+
+EULER_MAS = 0.577215664901532
+xs = np.linspace(0.0, 10, 50)
+
+
+@njit
+def gamma_manual(z, n=50):
+    """
+    Compute gamma function for some real positive float z
+
+    http://mathworld.wolfram.com/LogGammaFunction.html
+    """
+    out = -EULER_MAS * z - math.log(z)
+    for k in range(1, n):
+        t = z / k
+        out += t - math.log1p(t)
+    return math.exp(out)
+
+
+@njit
+def nbinom_manual(n, p):
+    mixture_gammas_manual = []
+    for x in xs:
+        mixture_gammas_manual.append(gamma_manual(x + n) / (
+                    gamma_manual(n) * gamma_manual(x + 1)) * p ** n * (
+                                                 1 - p) ** x)
+    return mixture_gammas_manual
+
+
+@njit
+def sample_nbinom(n, p, size):
+    randu = np.random.rand(size)
+    total = nbinom_manual(n, p)
+    total = np.array(total).cumsum()
+    return np.floor(np.interp(randu, total / total.max(), xs))
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -85,7 +121,7 @@ def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     return t_mins, epidemic_curve
 
 
-@jit(nopython=True)
+@njit
 def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
                       days_elapsed_max,
                       max_cases, seed=None):
@@ -129,7 +165,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
 
     while (cases > 0) and (t.min() < days_elapsed_max) and (
             cumulative_incidence < max_cases):
-        secondary = np.random.negative_binomial(n=k, p=k / (k + R0), size=cases)
+        secondary = sample_nbinom(n=k, p=k / (k + R0), size=cases)
 
         inds = np.arange(0, secondary.max())
         gamma_size = (secondary.shape[0], secondary.max())
