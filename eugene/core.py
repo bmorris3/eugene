@@ -88,14 +88,14 @@ def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
 @jit(nopython=True)
 def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
                       days_elapsed_max,
-                      max_cases, seed):
+                      max_cases, seed=None):
     """
     Simulate an outbreak.
 
     Parameters
     ----------
     R0 : float
-    
+
     k : float
 
     n : float
