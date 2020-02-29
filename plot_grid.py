@@ -10,7 +10,7 @@ k_grid = params['k_grid']
 trials = params['trials']
 
 red_plot = True
-samples_plot = True
+samples_plot = False
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
 

@@ -1,10 +1,10 @@
 import numpy as np
-from eugene import abc
+from eugene import abc, compute
 
 params = dict(
     # Grid of R0 and k parameters to iterate over
     R0_grid = np.logspace(np.log10(0.7), np.log10(10), 50),
-    k_grid = np.logspace(-2, 1, 30),
+    k_grid = np.logspace(-2, 1, 10),
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
@@ -37,7 +37,7 @@ params = dict(
     D_max = 60,  # days
 
     # Computer parameters
-    n_processes = 8,
+    n_processes = 16,
     n_grid_points_per_process = 2,
 
     # Formatting string for naming simulation outputs

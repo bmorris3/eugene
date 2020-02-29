@@ -1,10 +1,20 @@
 from copy import copy
 from itertools import zip_longest
 from concurrent import futures as cf
+
 import numpy as np
 from scipy.stats import gamma, nbinom
+from numba import njit
 
 __all__ = ['abc', 'compute', 'simulate_outbreak']
+
+
+@njit
+def sample_nbinom(n, p, size):
+    nb = np.zeros(size)
+    for i in range(size):
+        nb[i] = np.random.poisson(np.random.gamma(n, (1 - p) / p))
+    return nb
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -27,8 +37,8 @@ def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
     cf.wait(futures)
 
 
-def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
-                      max_cases):
+def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
+                           max_cases):
     """
     Simulate an outbreak.
 
@@ -42,7 +52,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     max_time : float
     days_elapsed_max : float
     max_cases : float
-    seed :
+
     Returns
     -------
     times : `~numpy.ndarray`
@@ -73,6 +83,74 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
         cases = np.count_nonzero(times_in_bounds)
         cumulative_incidence += cases
         t = t_new[times_in_bounds].copy()
+        if cases > 0:
+            t_mins.append(t.min())
+            incidence.append(cases)
+
+    incidence = np.array(incidence)
+    epidemic_curve = incidence.cumsum()
+    t_mins = np.array(t_mins)
+    return t_mins, epidemic_curve
+
+
+@njit
+def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
+                      days_elapsed_max,
+                      max_cases, seed=None):
+    """
+    Simulate an outbreak.
+
+    Parameters
+    ----------
+    R0 : float
+
+    k : float
+
+    n : float
+
+    D : float
+
+    gamma_shape : float
+
+    max_time : float
+
+    days_elapsed_max : float
+
+    max_cases : float
+
+    seed : int
+
+    Returns
+    -------
+    times : `~numpy.ndarray`
+        Times of incidence measurements
+    cumulative_incidence : `~numpy.ndarray`
+        Cumulative incidence (total cases) at each time
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    cumulative_incidence = int(n)
+    t = np.zeros(n)
+    cases = int(n)
+    incidence = [n]
+    t_mins = [0]
+
+    while (cases > 0) and (t.min() < days_elapsed_max) and (
+            cumulative_incidence < max_cases):
+        secondary = sample_nbinom(n=k, p=k/(k+R0), size=cases)
+
+        inds = np.arange(0, secondary.max())
+        gamma_size = (secondary.shape[0], secondary.max())
+
+        g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
+        t_new = np.expand_dims(t, 1) + g
+        mask = np.expand_dims(secondary, 1) <= inds
+        times_in_bounds = ((t_new < max_time) &
+                           np.logical_not(mask))
+        cases = np.count_nonzero(times_in_bounds)
+        cumulative_incidence += cases
+
+        t = t_new.ravel()[times_in_bounds.ravel()].copy()
         if cases > 0:
             t_mins.append(t.min())
             incidence.append(cases)

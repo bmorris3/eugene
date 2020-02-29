@@ -2,16 +2,6 @@
 Getting started
 ***************
 
-``eugene`` is a generalized simulator for outbreaks based on the work of
-`Riou & Althaus (2020) <https://github.com/jriou/wcov>`_. The primary goal is to
-probe two of the parameters that describe the epidemic of COVID-19, the basic
-reproduction number :math:`\mathcal{R}_0` and the overdispersion factor
-:math:`k`. We take an Approximate Bayesian Computation approach to estimating
-:math:`\mathcal{R}_0` and :math:`k` by running thousands of stochastic outbreak
-simulations and exploring which values of :math:`\mathcal{R}_0`, :math:`k`, and
-other parameters accurately reproduce the incidence of COVID-19 on January 18,
-2020.
-
 At the core of ``eugene`` lies a simple outbreak model, which starts with
 number of index cases :math:`n`. The user must also specify
 :math:`\mathcal{R}_0`, :math:`k`, the generation time between incidences
@@ -88,5 +78,5 @@ Now we can simulate 100 outbreaks with these initial parameters:
 
 Every epidemic curve starts at incidence of unity, and the cumulative incidence
 grows roughly exponentially, sometimes terminating with zero new cases before
-it reaches the end of the simulation domain (set by the ``days_elapsed``
+it reaches the end of the simulation domain (set by the ``days_elapsed_max``
 parameter).
