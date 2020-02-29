@@ -7,7 +7,7 @@ control_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             os.pardir, 'data',
                                             'control.txt'))
 
-seed = 2020
+seed = 42
 
 
 def test_simulate_outbreak():
