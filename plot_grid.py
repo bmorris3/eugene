@@ -9,10 +9,12 @@ R0_grid = params['R0_grid']
 k_grid = params['k_grid']
 trials = params['trials']
 
-red_plot = True
-samples_plot = False
+red_plot = False
+samples_plot = True
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
+print(np.r_[0:3, 4:samples.shape[1]])
+samples = samples[:, np.r_[0:3, 4:samples.shape[1]]]
 
 lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
 print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
@@ -20,12 +22,12 @@ print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
 if red_plot:
     hist2d, xedges, yedges = np.histogram2d(np.log10(samples[:, 0]),
                                             np.log10(samples[:, 1]),
-                                            bins=[R0_grid.shape[0],
-                                                  k_grid.shape[0]])
+                                            bins=[R0_grid.shape[0] - 2,
+                                                  k_grid.shape[0] - 1])
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
-    X, Y = np.meshgrid(R0_grid, k_grid)
+    X, Y = np.meshgrid(R0_grid[1:], k_grid[1:])
 
     im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
 
@@ -48,7 +50,7 @@ $\Delta t$: Time since index case [days]
 $\\alpha$: Gamma function shape parameter"""
 
 std_bin_size = 25
-bins = [std_bin_size, 10, std_bin_size, 20, std_bin_size,
+bins = [std_bin_size, 10, std_bin_size, 20, #std_bin_size,
         std_bin_size]
 
 if samples_plot:
@@ -59,7 +61,7 @@ if samples_plot:
     hist_kwargs = dict(plot_contours=False, plot_datapoints=False,
                        no_fill_contours=False, bins=bins)
 
-    corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', '$n$',
+    corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', #'$n$',
                             '$\Delta t$', '$\\alpha$'],
            smooth=True, contour=False, **hist_kwargs)
 
