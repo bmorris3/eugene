@@ -2,6 +2,9 @@
 Reproducing Riou & Althaus (2020)
 *********************************
 
+Approximate Bayesian Computation
+++++++++++++++++++++++++++++++++
+
 In this short tutorial, we'll show you how to reproduce the results of
 `Riou & Althaus (2020)
 <https://doi.org/10.2807/1560-7917.ES.2020.25.4.2000058>`_, which showed that
@@ -78,7 +81,12 @@ Finally, we can run the simulation with the following::
 
 The Approximate Bayesian Computation ``abc`` function will run simple parallel
 processes that each save the accepted chains from a rejection sampler algorithm.
-We can view these chains with the following commands::
+
+Visualizing the results
++++++++++++++++++++++++
+
+We can view the acceptance rate of the chains as a function of
+:math:`\mathcal{R}_0` and :math:`k` with the following commands::
 
     R0_grid = params['R0_grid']
     k_grid = params['k_grid']
@@ -122,7 +130,7 @@ meaning for every case of COVID-19 there are approximately two new cases
 generated, and :math:`k \gtrsim 0.1`.
 
 Parameter degeneracies
-----------------------
+++++++++++++++++++++++
 
 Since we sampled for a range of :math:`\mathcal{R}_0, k, D, n`, and
 ``gamma_shape`` parameters which we will call :math:`\alpha`, we can plot the
