@@ -97,26 +97,26 @@ We can view the acceptance rate of the chains as a function of
     lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
     print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
 
-    if red_plot:
-        hist2d, xedges, yedges = np.histogram2d(np.log10(samples[:, 0]),
-                                                np.log10(samples[:, 1]),
-                                                bins=[R0_grid.shape[0],
-                                                      k_grid.shape[0]])
 
-        fig, ax = plt.subplots(figsize=(5, 4))
+    hist2d, xedges, yedges = np.histogram2d(np.log10(samples[:, 0]),
+                                            np.log10(samples[:, 1]),
+                                            bins=[R0_grid.shape[0],
+                                                  k_grid.shape[0]])
 
-        X, Y = np.meshgrid(R0_grid, k_grid)
+    fig, ax = plt.subplots(figsize=(5, 4))
 
-        im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
+    X, Y = np.meshgrid(R0_grid, k_grid)
 
-        ax.set_xscale('log')
-        ax.set_yscale('log')
+    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
 
-        cbar = plt.colorbar(im, label='Acceptance fraction')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
 
-        ax.set(xlabel='$k$', ylabel='$\mathcal{R}_0$')
-        fig.savefig('plots/grid.pdf', bbox_inches='tight')
-        plt.show()
+    cbar = plt.colorbar(im, label='Acceptance fraction')
+
+    ax.set(xlabel='$k$', ylabel='$\mathcal{R}_0$')
+    fig.savefig('plots/grid.pdf', bbox_inches='tight')
+    plt.show()
 
 .. image:: plots/grid.pdf
   :width: 800
@@ -155,24 +155,21 @@ We can generate a *corner plot* with our results like so::
     bins = [std_bin_size, std_bin_size - 15, std_bin_size, std_bin_size - 5,
             std_bin_size, std_bin_size]
 
-    if samples_plot:
+    samples[:, 0] = np.log10(samples[:, 0])
+    samples[:, 1] = np.log10(samples[:, 1])
 
-        samples[:, 0] = np.log10(samples[:, 0])
-        samples[:, 1] = np.log10(samples[:, 1])
+    hist_kwargs = dict(plot_contours=False, plot_datapoints=False,
+                       no_fill_contours=False, bins=bins)
 
-        hist_kwargs = dict(plot_contours=False, plot_datapoints=False,
-                           no_fill_contours=False, bins=bins)
+    corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', '$n$',
+                            '$\Delta t$', '$\\alpha$'],
+           smooth=True, contour=False, **hist_kwargs)
 
-        corner(samples, labels=['$\log \mathcal{R}_0$', '$\log k$', '$D$', '$n$',
-                                '$\Delta t$', '$\\alpha$'],
-               smooth=True, contour=False, **hist_kwargs)
+    plt.annotate(key_text, xy=(0.55, 0.8), fontsize=18,
+                 ha='left', va='bottom', xycoords='figure fraction')
 
-        plt.annotate(key_text, xy=(0.55, 0.8), fontsize=18,
-                     ha='left', va='bottom', xycoords='figure fraction')
-
-        plt.savefig('plots/corner.pdf', bbox_inches='tight')
-        plt.show()
-
+    plt.savefig('plots/corner.pdf', bbox_inches='tight')
+    plt.show()
 
 .. image:: plots/corner.pdf
   :width: 800
@@ -195,7 +192,7 @@ well with small :math:`\mathcal{R}_0` and small :math:`D`, or with larger
 :math:`\mathcal{R}_0` and larger :math:`D`. There is degeneracy between
 :math:`\mathcal{R}_0` and the :math:`\Gamma`-function shape parameter
 :math:`\alpha` the observed cumulative incidence is reproduced equally well
-with :math:`\log_{10}\mathcal{R}_0` = 0.2` and :math:`\alpha=5`, or with
+with :math:`\log_{10}\mathcal{R}_0 = 0.2` and :math:`\alpha=5`, or with
 :math:`\log_{10}\mathcal{R}_0 = 1` and :math:`\alpha=1`. There are also
 degeneracies between :math:`\mathcal{R}_0` and :math:`n`, and :math:`\alpha`
 and :math:`D`.
