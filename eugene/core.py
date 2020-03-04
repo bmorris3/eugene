@@ -4,9 +4,10 @@ from concurrent import futures as cf
 
 import numpy as np
 from scipy.stats import gamma, nbinom
-from numba import njit
+from numba import jit, njit
 
-__all__ = ['abc', 'compute', 'simulate_outbreak']
+__all__ = ['abc', 'acceptance_fraction', 'simulate_outbreak',
+           'quarantine_fraction']
 
 
 @njit
@@ -29,16 +30,17 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
+def abc(function, n_processes, R0_grid, n_grid_points_per_process,
+        **parameters):
     # https://stackoverflow.com/a/15143994
     executor = cf.ProcessPoolExecutor(max_workers=n_processes)
-    futures = [executor.submit(compute, group, **parameters)
+    futures = [executor.submit(function, group, **parameters)
                for group in grouper(R0_grid, n_grid_points_per_process)]
     cf.wait(futures)
 
 
-def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
-                           max_cases):
+def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time,
+                           days_elapsed_max, max_cases):
     """
     Simulate an outbreak.
 
@@ -95,30 +97,32 @@ def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
 
 @njit
 def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
-                      days_elapsed_max,
-                      max_cases, seed=None):
+                      days_elapsed_max, max_cases, seed=None, f_Q=0):
     """
     Simulate an outbreak.
 
     Parameters
     ----------
     R0 : float
-
+        Reproductive number
     k : float
-
+        Overdispersion factor
     n : float
-
+        Number of index cases
     D : float
-
+        Generation time interval
     gamma_shape : float
-
+        Generation interval (Gamma distribution) shape parameter
     max_time : float
-
+        Maximum simulation time
     days_elapsed_max : float
-
+        Maximum time elapsed from index case
     max_cases : float
-
-    seed : int
+        Maximum number of cases simulated
+    seed : int (optional)
+        Random seed
+    f_Q : float (optional)
+        The fraction of cases that are perfectly quarantined. Default is zero.
 
     Returns
     -------
@@ -137,12 +141,25 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
 
     while (cases > 0) and (t.min() < days_elapsed_max) and (
             cumulative_incidence < max_cases):
+
+        # Generate secondary cases from negative binomial distribution
         secondary = sample_nbinom(n=k, p=k/(k+R0), size=cases)
 
-        inds = np.arange(0, secondary.max())
-        gamma_size = (secondary.shape[0], secondary.max())
 
+        # Randomly choose fraction of cases to be perfectly quarantined
+        fraction_keep = int(len(secondary) * (1 - f_Q))
+        init_secondary_shape = secondary.shape[0]
+        secondary = np.random.choice(secondary, fraction_keep,
+                                     replace=False)
+
+        secondary = np.concatenate((secondary,
+                                    np.zeros(int(init_secondary_shape -
+                                                 fraction_keep))))
+
+        inds = np.arange(0, secondary.max())
+        gamma_size = (secondary.shape[0], int(secondary.max()))
         g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
+
         t_new = np.expand_dims(t, 1) + g
         mask = np.expand_dims(secondary, 1) <= inds
         times_in_bounds = ((t_new < max_time) &
@@ -161,10 +178,10 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
     return t_mins, epidemic_curve
 
 
-def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
-            gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
-            days_elapsed_max, min_number_cases, max_number_cases,
-            samples_path):
+def acceptance_fraction(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max,
+                        max_cases, gamma_shape_min, gamma_shape_max, max_time,
+                        days_elapsed_min, days_elapsed_max, min_number_cases,
+                        max_number_cases, samples_path):
 
     accepted_grid = []
 
@@ -216,6 +233,72 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                         k_chain.append(k)
                         days_elapsed_chain.append(days_elapsed)
                         gamma_shape_chain.append(gamma_shape)
+
+            if len(accepted) > 0:
+                accepted_fraction = np.count_nonzero(accepted) / len(accepted)
+            else:
+                accepted_fraction = 0
+
+            accept_k.append(accepted_fraction)
+
+        accepted_grid.append(accept_k)
+
+    samples = np.vstack([R0_chain, k_chain, D_chain, n_chain,
+                         days_elapsed_chain, gamma_shape_chain]).T
+    np.save(samples_path.format(R0_grid[0]), samples)
+
+
+def quarantine_fraction(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max,
+                        max_cases, gamma_shape_min, gamma_shape_max, max_time,
+                        days_elapsed_min, days_elapsed_max, min_number_cases,
+                        max_number_cases, samples_path, f_Q):
+
+    accepted_grid = []
+
+    D_chain = []
+    n_chain = []
+    R0_chain = []
+    k_chain = []
+    days_elapsed_chain = []
+    gamma_shape_chain = []
+
+    R0_grid = np.array(R0_grid)
+
+    for i, R0 in enumerate(R0_grid):
+        accept_k = []
+        for j, k in enumerate(k_grid):
+            accepted = []
+            for n in range(trials):
+                D = D_min + (D_max - D_min) * np.random.rand()
+                n = np.random.randint(n_min, n_max)
+                gamma_shape = (gamma_shape_min + (gamma_shape_max -
+                                                  gamma_shape_min) *
+                               np.random.rand())
+                days_elapsed = (max(days_elapsed_min) +
+                                (max(days_elapsed_max) - max(days_elapsed_min)
+                                 ) * np.random.rand())
+
+                t_mins, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
+                                                    max_time, days_elapsed,
+                                                    max_cases, f_Q=f_Q)
+
+                if t_mins.max() > max(days_elapsed_max):
+                    # Outbreak is still ongoing
+                    accept = False
+                elif cum_inc.max() > max_cases:
+                    # Outbreak has tons of cases
+                    accept = False
+                else:
+                    # Outbreak has terminated:
+                    accept = True
+
+                if accept:
+                    D_chain.append(D)
+                    n_chain.append(n)
+                    R0_chain.append(R0)
+                    k_chain.append(k)
+                    days_elapsed_chain.append(days_elapsed)
+                    gamma_shape_chain.append(gamma_shape)
 
             if len(accepted) > 0:
                 accepted_fraction = np.count_nonzero(accepted) / len(accepted)
