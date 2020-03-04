@@ -16,4 +16,5 @@ other parameters accurately reproduce the incidence of COVID-19 on January 18,
 
   eugene/installation.rst
   eugene/gettingstarted.rst
+  eugene/riou.rst
   eugene/index.rst
