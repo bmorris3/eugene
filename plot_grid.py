@@ -14,8 +14,8 @@ samples_plot = False
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
 
-lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
-print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
+# lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
+# print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
 
 if red_plot:
     hist2d, xedges, yedges = np.histogram2d(samples[:, 0],
@@ -27,15 +27,15 @@ if red_plot:
 
     X, Y = np.meshgrid(f_home_grid, max_community_spread_grid)
 
-    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
+    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds, vmin=0, vmax=1)
 
-    ax.set_xscale('log')
+    # ax.set_xscale('log')
     # ax.set_yscale('log')
 
-    cbar = plt.colorbar(im, label='Acceptance fraction')
+    cbar = plt.colorbar(im, label='Extinction fraction')
 
-    ax.set(ylabel='$N_{\\rm max}$', xlabel='$f_{\\rm home}$')
-    fig.savefig('plots/grid.pdf', bbox_inches='tight')
+    ax.set(xlabel='$N_{\\rm max}$', ylabel='$f_{\\rm home}$')
+    fig.savefig('plots/containment.pdf', bbox_inches='tight')
     plt.show()
 
 key_text = """Key:

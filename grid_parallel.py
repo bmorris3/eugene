@@ -3,17 +3,17 @@ from eugene import abc, compute
 
 params = dict(
     R0 = 2,
-    k = 2,
+    k = 1,
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
-    max_cases = 1e4,
+    max_cases = 1e5,
 
     # Maximum number of days someone might transmit the disease
-    max_time = 90,   # days
+    max_time = 365,   # days
 
     # Number of stochastic trials to run at each grid-point
-    trials = 100,
+    trials = 1000,
 
     # Days elapsed since zoonotic transmission
     days_elapsed_min = [46-7, 52-7],  # days
@@ -36,17 +36,17 @@ params = dict(
     D_max = 14,  # days
 
     # Fraction of transmissions that occur at home, f_home:
-    f_home_grid = np.linspace(0.6, 0.9, 10),
+    f_home_grid = np.linspace(0.2, 0.9, 20),
 
     # Average number of people per household
     people_per_household = 3.1,
 
     # Maximum superspreading event size
-    max_community_spread_grid = np.logspace(np.log10(50), 4, 10),
+    max_community_spread_grid = np.arange(1, 15, 1),
 
     # Computer parameters
     n_processes = 16,
-    n_grid_points_per_process = 2,
+    n_grid_points_per_process = 1,
 
     # Formatting string for naming simulation outputs
     samples_path = 'samples/samples{0}.npy'
@@ -58,3 +58,4 @@ if __name__ == '__main__':
     print(f'Total number of simulations triggered: {total_trials}')
 
     abc(**params)
+    # compute(**params)

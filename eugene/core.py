@@ -209,27 +209,37 @@ def compute(f_home_grid, max_community_spread_grid,
                                                                people_per_household,
                                                                max_community_spread)
 
-                if t_mins.max() >= days_elapsed:
-                    delta_t = (np.array(days_elapsed_min) -
-                               max(days_elapsed_min))
-                    cases_at_obs_times = 10**np.interp(days_elapsed +
-                                                       delta_t, t_mins,
-                                                       np.log10(cum_inc))
+                # if t_mins.max() >= days_elapsed:
+                #     delta_t = (np.array(days_elapsed_min) -
+                #                max(days_elapsed_min))
+                #     cases_at_obs_times = 10**np.interp(days_elapsed +
+                #                                        delta_t, t_mins,
+                #                                        np.log10(cum_inc))
+                    #
+                    # accept = ((np.asarray(min_number_cases) <
+                    #            cases_at_obs_times) &
+                    #           (cases_at_obs_times <
+                    #            np.asarray(max_number_cases))).all()
+                    #
+                    # accepted.append(accept)
 
-                    accept = ((np.asarray(min_number_cases) <
-                               cases_at_obs_times) &
-                              (cases_at_obs_times <
-                               np.asarray(max_number_cases))).all()
+                if t_mins.max() > max(days_elapsed_max):
+                    # Outbreak is still ongoing
+                    accept = False
+                elif cum_inc.max() > max_cases:
+                    # Outbreak has tons of cases
+                    accept = False
+                else:
+                    # Outbreak has terminated:
+                    accept = True
 
-                    accepted.append(accept)
-
-                    if accept:
-                        D_chain.append(D)
-                        n_chain.append(n)
-                        f_home_chain.append(f_home)
-                        max_community_spread_chain.append(max_community_spread)
-                        days_elapsed_chain.append(days_elapsed)
-                        gamma_shape_chain.append(gamma_shape)
+                if accept:
+                    D_chain.append(D)
+                    n_chain.append(n)
+                    f_home_chain.append(f_home)
+                    max_community_spread_chain.append(max_community_spread)
+                    days_elapsed_chain.append(days_elapsed)
+                    gamma_shape_chain.append(gamma_shape)
 
             if len(accepted) > 0:
                 accepted_fraction = np.count_nonzero(accepted) / len(accepted)
@@ -308,7 +318,7 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
 
         # impose maximum on number of secondary cases from single primary:
         secondary_comm_min = min_along_axis(secondary_comm,
-                                            max_community_spread *
+                                            int(max_community_spread) *
                                             np.ones(cases))
 
         secondary_home = sample_nbinom(n=k, p=k/(k + R0),
@@ -322,7 +332,6 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
 
         inds = np.arange(0, secondary.max())
         gamma_size = (secondary.shape[0], secondary.max())
-
         g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
         t_new = np.expand_dims(t, 1) + g
         mask = np.expand_dims(secondary, 1) <= inds
