@@ -1,5 +1,5 @@
 import numpy as np
-from eugene import abc, compute
+from eugene import abc, simulate_outbreak, simulate_outbreak_structured, compute
 
 params = dict(
     # Grid of R0 and k parameters to iterate over
@@ -26,7 +26,7 @@ params = dict(
 
     # Initial number of index cases n (day-zero cases)
     n_min = 1,   # cases
-    n_max = 100,  # cases
+    n_max = 10,  # cases
 
     # Generation interval/Gamma function shape parameter
     gamma_shape_min = 1,
@@ -34,11 +34,22 @@ params = dict(
 
     # Generation time interval D
     D_min = 7,   # days
-    D_max = 60,  # days
+    D_max = 30,  # days
+
+    outbreak_function = simulate_outbreak, #_structured,
+
+    # Fraction of transmissions that occur at home, f_home:
+    f_home = 0.8,
+
+    # Average number of people per household
+    people_per_household = 3.1,
+
+    # Maximum superspreading event size
+    max_community_spread = 1000,
 
     # Computer parameters
-    n_processes = 16,
-    n_grid_points_per_process = 2,
+    # n_processes = 8,
+    # n_grid_points_per_process = 2,
 
     # Formatting string for naming simulation outputs
     samples_path = 'samples/samples{0}.npy'
@@ -49,4 +60,5 @@ if __name__ == '__main__':
                     params['k_grid'].shape[0])
     print(f'Total number of simulations triggered: {total_trials}')
 
-    abc(**params)
+    # abc(**params)
+    compute(**params)
