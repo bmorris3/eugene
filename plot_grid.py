@@ -5,8 +5,8 @@ from glob import glob
 
 from grid_parallel import params
 
-R0_grid = params['R0_grid']
-k_grid = params['k_grid']
+f_home_grid = params['f_home_grid']
+max_community_spread_grid = params['max_community_spread_grid']
 trials = params['trials']
 
 red_plot = True
@@ -18,23 +18,23 @@ lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
 print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
 
 if red_plot:
-    hist2d, xedges, yedges = np.histogram2d(np.log10(samples[:, 0]),
-                                            np.log10(samples[:, 1]),
-                                            bins=[R0_grid.shape[0],
-                                                  k_grid.shape[0]])
+    hist2d, xedges, yedges = np.histogram2d(samples[:, 0],
+                                            samples[:, 1],
+                                            bins=[f_home_grid.shape[0],
+                                                  max_community_spread_grid.shape[0]])
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
-    X, Y = np.meshgrid(R0_grid, k_grid)
+    X, Y = np.meshgrid(f_home_grid, max_community_spread_grid)
 
     im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds)
 
     ax.set_xscale('log')
-    ax.set_yscale('log')
+    # ax.set_yscale('log')
 
     cbar = plt.colorbar(im, label='Acceptance fraction')
 
-    ax.set(xlabel='$k$', ylabel='$\mathcal{R}_0$')
+    ax.set(ylabel='$N_{\\rm max}$', xlabel='$f_{\\rm home}$')
     fig.savefig('plots/grid.pdf', bbox_inches='tight')
     plt.show()
 

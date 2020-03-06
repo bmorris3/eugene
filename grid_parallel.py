@@ -2,9 +2,8 @@ import numpy as np
 from eugene import abc, compute
 
 params = dict(
-    # Grid of R0 and k parameters to iterate over
-    R0_grid = np.logspace(np.log10(0.7), np.log10(10), 50),
-    k_grid = np.logspace(-2, 1, 10),
+    R0 = 2,
+    k = 2,
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
@@ -14,7 +13,7 @@ params = dict(
     max_time = 90,   # days
 
     # Number of stochastic trials to run at each grid-point
-    trials = 1000,
+    trials = 100,
 
     # Days elapsed since zoonotic transmission
     days_elapsed_min = [46-7, 52-7],  # days
@@ -34,16 +33,16 @@ params = dict(
 
     # Generation time interval D
     D_min = 7,   # days
-    D_max = 60,  # days
+    D_max = 14,  # days
 
     # Fraction of transmissions that occur at home, f_home:
-    f_home=0.8,
+    f_home_grid = np.linspace(0.6, 0.9, 10),
 
     # Average number of people per household
-    people_per_household=3.1,
+    people_per_household = 3.1,
 
     # Maximum superspreading event size
-    max_community_spread=1000,
+    max_community_spread_grid = np.logspace(np.log10(50), 4, 10),
 
     # Computer parameters
     n_processes = 16,
@@ -54,8 +53,8 @@ params = dict(
 )
 
 if __name__ == '__main__':
-    total_trials = (params['trials'] * params['R0_grid'].shape[0] *
-                    params['k_grid'].shape[0])
+    total_trials = (params['trials'] * params['f_home_grid'].shape[0] *
+                    params['max_community_spread_grid'].shape[0])
     print(f'Total number of simulations triggered: {total_trials}')
 
     abc(**params)

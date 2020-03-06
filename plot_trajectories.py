@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 
-from eugene import simulate_outbreak
+from eugene import simulate_outbreak_structured
 
 from grid_parallel import params
 
@@ -11,7 +11,7 @@ np.random.seed(2019)
 
 fig, ax = plt.subplots(figsize=(4, 3))
 
-R0_grid = np.linspace(0.7, 2.5, 10)
+R0_grid = np.linspace(0.7, 5, 10)
 
 cmap = lambda x: plt.cm.viridis((x - R0_grid.min())/R0_grid.ptp())
 
@@ -25,10 +25,13 @@ for j in range(R0_grid.shape[0]):
             gamma_shape=2,
             max_time=90,
             days_elapsed_max=52+7,
-            max_cases=1e4
+            max_cases=1e4,
+            f_home = 0.8,
+            people_per_household = 3.1,
+            max_community_spread = 1000,
         )
 
-        times, cumulative_incidence = simulate_outbreak(**parameters)
+        times, cumulative_incidence = simulate_outbreak_structured(**parameters)
 
         days_elapsed_min = params['days_elapsed_min']
         days_elapsed = parameters['days_elapsed_max']

@@ -6,7 +6,8 @@ import numpy as np
 from scipy.stats import gamma, nbinom
 from numba import njit
 
-__all__ = ['abc', 'compute', 'simulate_outbreak']
+__all__ = ['abc', 'compute', 'simulate_outbreak',
+           'simulate_outbreak_structured']
 
 
 @njit
@@ -36,11 +37,11 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def abc(n_processes, R0_grid, n_grid_points_per_process, **parameters):
+def abc(n_processes, f_home_grid, n_grid_points_per_process, **parameters):
     # https://stackoverflow.com/a/15143994
     executor = cf.ProcessPoolExecutor(max_workers=n_processes)
     futures = [executor.submit(compute, group, **parameters)
-               for group in grouper(R0_grid, n_grid_points_per_process)]
+               for group in grouper(f_home_grid, n_grid_points_per_process)]
     cf.wait(futures)
 
 
@@ -168,25 +169,29 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
     return t_mins, epidemic_curve
 
 
-def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
+def compute(f_home_grid, max_community_spread_grid,
+            R0, k, trials, D_min, D_max, n_min, n_max, max_cases,
             gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
             days_elapsed_max, min_number_cases, max_number_cases,
-            samples_path, f_home, people_per_household, max_community_spread):
+            samples_path, people_per_household):
 
     accepted_grid = []
 
     D_chain = []
     n_chain = []
-    R0_chain = []
-    k_chain = []
+    f_home_chain = []
+    max_community_spread_chain = []
+    # R0_chain = []
+    # k_chain = []
+
     days_elapsed_chain = []
     gamma_shape_chain = []
 
-    R0_grid = np.array(R0_grid)
+    f_home_grid = np.array(f_home_grid)
 
-    for i, R0 in enumerate(R0_grid):
+    for i, f_home in enumerate(f_home_grid):
         accept_k = []
-        for j, k in enumerate(k_grid):
+        for j, max_community_spread in enumerate(max_community_spread_grid):
             accepted = []
             for n in range(trials):
                 D = D_min + (D_max - D_min) * np.random.rand()
@@ -221,8 +226,8 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                     if accept:
                         D_chain.append(D)
                         n_chain.append(n)
-                        R0_chain.append(R0)
-                        k_chain.append(k)
+                        f_home_chain.append(f_home)
+                        max_community_spread_chain.append(max_community_spread)
                         days_elapsed_chain.append(days_elapsed)
                         gamma_shape_chain.append(gamma_shape)
 
@@ -235,9 +240,9 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
 
         accepted_grid.append(accept_k)
 
-    samples = np.vstack([R0_chain, k_chain, D_chain, n_chain,
-                         days_elapsed_chain, gamma_shape_chain]).T
-    np.save(samples_path.format(R0_grid[0]), samples)
+    samples = np.vstack([f_home_chain, max_community_spread_chain, D_chain,
+                         n_chain, days_elapsed_chain, gamma_shape_chain]).T
+    np.save(samples_path.format(f_home_grid[0]), samples)
 
 
 @njit
@@ -295,10 +300,10 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
     while (cases > 0) and (t.min() < days_elapsed_max) and (
             cumulative_incidence < max_cases):
 
-        n_cases_home = int(cases * f_home)
+        n_cases_home = int(cases * f_home) + 1
         n_cases_comm = cases - n_cases_home
 
-        secondary_comm = sample_nbinom(n=k, p=k/(k + (R0 * (1 - f_home))),
+        secondary_comm = sample_nbinom(n=k, p=k/(k + R0),
                                        size=n_cases_comm)
 
         # impose maximum on number of secondary cases from single primary:
@@ -306,7 +311,7 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
                                             max_community_spread *
                                             np.ones(cases))
 
-        secondary_home = sample_nbinom(n=k, p=k/(k + (R0 * f_home)),
+        secondary_home = sample_nbinom(n=k, p=k/(k + R0),
                                        size=n_cases_home)
 
         secondary_home_min = min_along_axis(np.random.poisson(people_per_household,
