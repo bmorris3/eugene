@@ -16,6 +16,13 @@ def sample_nbinom(n, p, size):
         nb[i] = np.random.poisson(np.random.gamma(n, (1 - p) / p))
     return nb
 
+@njit
+def min_along_axis(a, b):
+    mins = []
+    for i, j in zip(a, b):
+        mins.append(min([i, j]))
+    return np.array(mins)
+
 
 def grouper(iterable, n, fillvalue=None):
     """
@@ -164,7 +171,7 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
 def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
             gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
             days_elapsed_max, min_number_cases, max_number_cases,
-            samples_path):
+            samples_path, f_home, people_per_household, max_community_spread):
 
     accepted_grid = []
 
@@ -191,9 +198,11 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
                                 (max(days_elapsed_max) - max(days_elapsed_min)
                                  ) * np.random.rand())
 
-                t_mins, cum_inc = simulate_outbreak(R0, k, n, D, gamma_shape,
-                                                    max_time, days_elapsed,
-                                                    max_cases)
+                t_mins, cum_inc = simulate_outbreak_structured(R0, k, n, D, gamma_shape,
+                                                               max_time, days_elapsed,
+                                                               max_cases, f_home,
+                                                               people_per_household,
+                                                               max_community_spread)
 
                 if t_mins.max() >= days_elapsed:
                     delta_t = (np.array(days_elapsed_min) -
@@ -229,3 +238,100 @@ def compute(R0_grid, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
     samples = np.vstack([R0_chain, k_chain, D_chain, n_chain,
                          days_elapsed_chain, gamma_shape_chain]).T
     np.save(samples_path.format(R0_grid[0]), samples)
+
+
+@njit
+def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
+                                 days_elapsed_max, max_cases, f_home,
+                                 people_per_household, max_community_spread,
+                                 seed=None):
+    """
+    Simulate an outbreak.
+
+    Parameters
+    ----------
+    R0 : float
+
+    k : float
+
+    n : float
+
+    D : float
+
+    gamma_shape : float
+
+    max_time : float
+
+    days_elapsed_max : float
+
+    max_cases : float
+
+    f_home : float
+        Fraction of cases that occur at home
+
+    people_per_household : float
+        Number of people in each household
+
+    max_community_spread : int
+        Maximum number of secondary cases from a single spreading event
+
+    seed : int
+
+    Returns
+    -------
+    times : `~numpy.ndarray`
+        Times of incidence measurements
+    cumulative_incidence : `~numpy.ndarray`
+        Cumulative incidence (total cases) at each time
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    cumulative_incidence = int(n)
+    t = np.zeros(n)
+    cases = int(n)
+    incidence = [n]
+    t_mins = [0]
+
+    while (cases > 0) and (t.min() < days_elapsed_max) and (
+            cumulative_incidence < max_cases):
+
+        n_cases_home = int(cases * f_home)
+        n_cases_comm = cases - n_cases_home
+
+        secondary_comm = sample_nbinom(n=k, p=k/(k + (R0 * (1 - f_home))),
+                                       size=n_cases_comm)
+
+        # impose maximum on number of secondary cases from single primary:
+        secondary_comm_min = min_along_axis(secondary_comm,
+                                            max_community_spread *
+                                            np.ones(cases))
+
+        secondary_home = sample_nbinom(n=k, p=k/(k + (R0 * f_home)),
+                                       size=n_cases_home)
+
+        secondary_home_min = min_along_axis(np.random.poisson(people_per_household,
+                                                              size=cases),
+                                            secondary_home)
+
+        secondary = np.concatenate((secondary_comm_min, secondary_home_min))
+
+        inds = np.arange(0, secondary.max())
+        gamma_size = (secondary.shape[0], secondary.max())
+
+        g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
+        t_new = np.expand_dims(t, 1) + g
+        mask = np.expand_dims(secondary, 1) <= inds
+        times_in_bounds = ((t_new < max_time) &
+                           np.logical_not(mask))
+        cases = np.count_nonzero(times_in_bounds)
+        cumulative_incidence += cases
+
+        t = t_new.ravel()[times_in_bounds.ravel()].copy()
+        if cases > 0:
+            t_mins.append(t.min())
+            incidence.append(cases)
+
+    incidence = np.array(incidence)
+    epidemic_curve = incidence.cumsum()
+    t_mins = np.array(t_mins)
+    return t_mins, epidemic_curve

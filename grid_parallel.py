@@ -36,6 +36,15 @@ params = dict(
     D_min = 7,   # days
     D_max = 60,  # days
 
+    # Fraction of transmissions that occur at home, f_home:
+    f_home=0.8,
+
+    # Average number of people per household
+    people_per_household=3.1,
+
+    # Maximum superspreading event size
+    max_community_spread=1000,
+
     # Computer parameters
     n_processes = 16,
     n_grid_points_per_process = 2,
