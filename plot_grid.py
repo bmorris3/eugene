@@ -9,8 +9,8 @@ f_home_grid = params['f_home_grid']
 max_community_spread_grid = params['max_community_spread_grid']
 trials = params['trials']
 
-red_plot = True
-samples_plot = False
+red_plot = False
+samples_plot = True
 
 samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
 
@@ -27,7 +27,7 @@ if red_plot:
 
     X, Y = np.meshgrid(f_home_grid, max_community_spread_grid)
 
-    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Reds, vmin=0, vmax=1)
+    im = ax.pcolor(Y, X, hist2d.T / trials, cmap=plt.cm.Blues, vmin=0, vmax=1)
 
     # ax.set_xscale('log')
     # ax.set_yscale('log')
@@ -53,8 +53,8 @@ bins = [std_bin_size, 10, std_bin_size, 20, std_bin_size,
 
 if samples_plot:
 
-    samples[:, 0] = np.log10(samples[:, 0])
-    samples[:, 1] = np.log10(samples[:, 1])
+    # samples[:, 0] = np.log10(samples[:, 0])
+    # samples[:, 1] = np.log10(samples[:, 1])
 
     hist_kwargs = dict(plot_contours=False, plot_datapoints=False,
                        no_fill_contours=False, bins=bins)

@@ -13,7 +13,7 @@ params = dict(
     max_time = 365,   # days
 
     # Number of stochastic trials to run at each grid-point
-    trials = 1000,
+    trials = 500,
 
     # Days elapsed since zoonotic transmission
     days_elapsed_min = [46-7, 52-7],  # days
@@ -25,7 +25,7 @@ params = dict(
 
     # Initial number of index cases n (day-zero cases)
     n_min = 1,   # cases
-    n_max = 100,  # cases
+    n_max = 50,  # cases
 
     # Generation interval/Gamma function shape parameter
     gamma_shape_min = 1,
@@ -36,13 +36,13 @@ params = dict(
     D_max = 14,  # days
 
     # Fraction of transmissions that occur at home, f_home:
-    f_home_grid = np.linspace(0.2, 0.9, 20),
+    f_home_grid = np.linspace(0.2, 0.9, 15),
 
     # Average number of people per household
     people_per_household = 3.1,
 
     # Maximum superspreading event size
-    max_community_spread_grid = np.arange(1, 15, 1),
+    max_community_spread_grid = np.arange(1, 25, 1),
 
     # Computer parameters
     n_processes = 16,

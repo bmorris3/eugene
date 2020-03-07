@@ -203,9 +203,14 @@ def compute(f_home_grid, max_community_spread_grid,
                                 (max(days_elapsed_max) - max(days_elapsed_min)
                                  ) * np.random.rand())
 
-                t_mins, cum_inc = simulate_outbreak_structured(R0, k, n, D, gamma_shape,
-                                                               max_time, days_elapsed,
-                                                               max_cases, f_home,
+                ell = k * (f_home**2 + (1 - f_home)**2)
+
+                t_mins, cum_inc = simulate_outbreak_structured(R0, ell, n, D,
+                                                               gamma_shape,
+                                                               max_time,
+                                                               days_elapsed,
+                                                               max_cases,
+                                                               f_home,
                                                                people_per_household,
                                                                max_community_spread)
 
