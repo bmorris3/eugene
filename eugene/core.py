@@ -25,6 +25,14 @@ def min_along_axis(a, b):
     return np.array(mins)
 
 
+@njit
+def max_along_axis(a, b):
+    maxes = []
+    for i, j in zip(a, b):
+        maxes.append(max([i, j]))
+    return np.array(maxes)
+
+
 def grouper(iterable, n, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks.
@@ -322,16 +330,18 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
                                        size=n_cases_comm)
 
         # impose maximum on number of secondary cases from single primary:
-        secondary_comm_min = min_along_axis(secondary_comm,
-                                            int(max_community_spread) *
-                                            np.ones(cases))
+        secondary_comm_min = min_along_axis(secondary_comm, np.ones(cases) *
+                                            int(max_community_spread))
 
         secondary_home = sample_nbinom(n=k, p=k/(k + R0),
                                        size=n_cases_home)
 
-        secondary_home_min = min_along_axis(np.random.poisson(people_per_household,
-                                                              size=cases),
-                                            secondary_home)
+        # Draw household size from max(Poisson(3.1), 1):
+        poisson_home = max_along_axis(np.random.poisson(people_per_household,
+                                                        size=cases),
+                                      np.ones(cases))
+
+        secondary_home_min = min_along_axis(poisson_home, secondary_home)
 
         secondary = np.concatenate((secondary_comm_min, secondary_home_min))
 
