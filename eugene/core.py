@@ -306,8 +306,16 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
     if seed is not None:
         np.random.seed(seed)
 
+    # `population_vector` is a binary vector representing the infectious state
+    # of every person in the population (0=healthy, 1=infected)
     population_vector = np.zeros(int(population))
+
+    # `time_vector` tracks how long a person is infections, and only allows them
+    # to spread the virus if the time elapsed since their infection is less than
+    # `max_time`
     time_vector = np.zeros(int(population))
+
+    # Seed population with `n` index cases
     population_vector[:n] = 1
     time_vector[:n] = 0.01
 
@@ -318,7 +326,6 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
     steps = 0
 
     while (cases > 0) and (cumulative_incidence < max_cases):
-        infected_inds = np.nonzero(time_vector)[0]
         n_cases_home = int(cases * f_home) + 1
         n_cases_comm = cases - n_cases_home
 
@@ -339,39 +346,44 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
 
         secondary_home_min = min_along_axis(poisson_home, secondary_home)
 
-        secondary = np.sum(np.concatenate((secondary_comm_min, secondary_home_min)))
+        secondary = np.sum(secondary_comm_min) + np.sum(secondary_home_min)
 
         # Infect new cases
         new_infect_inds = np.random.choice(population, int(secondary),
                                            replace=False)
 
-        # Increment time interval for existing cases
-
+        # If already infected and generation time < `max_time`, add to
+        # `still_infectious` index array
         still_infectious = new_infect_inds[(population_vector[new_infect_inds] == 1) &
                                            (time_vector[new_infect_inds] < max_time)]
+
+        # If newly infected, add to `new_infections` index array
         new_infections = new_infect_inds[(population_vector[new_infect_inds] == 0)]
 
-        g1 = np.random.standard_gamma(D / gamma_shape, size=len(new_infections))
+        # Compute generation time interval for the new infections and the
+        # already infected
+        g1 = np.random.standard_gamma(D, size=len(new_infections))
+        g2 = np.random.standard_gamma(D, size=len(still_infectious))
 
-        # Increment time interval for new cases
-        g2 = np.random.standard_gamma(D / gamma_shape, size=len(still_infectious))
-
+        # Infect the newly infected
         population_vector[new_infections] = 1
 
+        # Increment time interval for new cases
         time_vector[new_infections] += g1
+
+        # Increment time interval for existing cases
+        # print(time_vector[still_infectious], g2)
         time_vector[still_infectious] = min_along_axis(time_vector[still_infectious] + g2,
                                                        max_time * np.ones(len(still_infectious)))
 
-        if np.count_nonzero(population_vector) < population:
-            cumulative_incidence = np.count_nonzero(population_vector)
+        # Cumulative incidence is the number of ones in `population_vector`
+        cumulative_incidence = np.count_nonzero(population_vector)
 
-            if cases > 0:
-                t_mins.append(steps)
-                incidence.append(cumulative_incidence)
-                steps += 1
-                cases = len(new_infections)
-        else:
-            break
+        if cases > 0:
+            t_mins.append(steps)
+            incidence.append(cumulative_incidence)
+            steps += 1
+            cases = len(new_infections)
 
     incidence = np.array(incidence)
     return np.arange(steps + 1), incidence, time_vector, population_vector
