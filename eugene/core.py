@@ -181,7 +181,7 @@ def compute(f_home_grid, max_community_spread_grid,
             R0, k, trials, D_min, D_max, n_min, n_max, max_cases,
             gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
             days_elapsed_max, min_number_cases, max_number_cases,
-            samples_path, people_per_household):
+            samples_path, people_per_household, population):
 
     accepted_grid = []
 
@@ -220,21 +220,9 @@ def compute(f_home_grid, max_community_spread_grid,
                                                                max_cases,
                                                                f_home,
                                                                people_per_household,
-                                                               max_community_spread)
+                                                               max_community_spread,
+                                                               population)
 
-                # if t_mins.max() >= days_elapsed:
-                #     delta_t = (np.array(days_elapsed_min) -
-                #                max(days_elapsed_min))
-                #     cases_at_obs_times = 10**np.interp(days_elapsed +
-                #                                        delta_t, t_mins,
-                #                                        np.log10(cum_inc))
-                    #
-                    # accept = ((np.asarray(min_number_cases) <
-                    #            cases_at_obs_times) &
-                    #           (cases_at_obs_times <
-                    #            np.asarray(max_number_cases))).all()
-                    #
-                    # accepted.append(accept)
 
                 if t_mins.max() > max(days_elapsed_max):
                     # Outbreak is still ongoing
@@ -272,7 +260,7 @@ def compute(f_home_grid, max_community_spread_grid,
 def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
                                  days_elapsed_max, max_cases, f_home,
                                  people_per_household, max_community_spread,
-                                 seed=None):
+                                 population, seed=None):
     """
     Simulate an outbreak.
 
@@ -305,6 +293,9 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
 
     seed : int
 
+    population : int
+        Total population size
+
     Returns
     -------
     times : `~numpy.ndarray`
@@ -314,15 +305,20 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
     """
     if seed is not None:
         np.random.seed(seed)
+
+    population_vector = np.zeros(int(population))
+    time_vector = np.zeros(int(population))
+    population_vector[:n] = 1
+    time_vector[:n] = 0.01
+
     cumulative_incidence = int(n)
-    t = np.zeros(n)
     cases = int(n)
     incidence = [n]
     t_mins = [0]
+    steps = 0
 
-    while (cases > 0) and (t.min() < days_elapsed_max) and (
-            cumulative_incidence < max_cases):
-
+    while (cases > 0) and (cumulative_incidence < max_cases):
+        infected_inds = np.nonzero(time_vector)[0]
         n_cases_home = int(cases * f_home) + 1
         n_cases_comm = cases - n_cases_home
 
@@ -338,29 +334,44 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
 
         # Draw household size from max(Poisson(3.1), 1):
         poisson_home = max_along_axis(np.random.poisson(people_per_household,
-                                                        size=cases),
+                                                        size=n_cases_home),
                                       np.ones(cases))
 
         secondary_home_min = min_along_axis(poisson_home, secondary_home)
 
-        secondary = np.concatenate((secondary_comm_min, secondary_home_min))
+        secondary = np.sum(np.concatenate((secondary_comm_min, secondary_home_min)))
 
-        inds = np.arange(0, secondary.max())
-        gamma_size = (secondary.shape[0], secondary.max())
-        g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
-        t_new = np.expand_dims(t, 1) + g
-        mask = np.expand_dims(secondary, 1) <= inds
-        times_in_bounds = ((t_new < max_time) &
-                           np.logical_not(mask))
-        cases = np.count_nonzero(times_in_bounds)
-        cumulative_incidence += cases
+        # Infect new cases
+        new_infect_inds = np.random.choice(population, int(secondary),
+                                           replace=False)
 
-        t = t_new.ravel()[times_in_bounds.ravel()].copy()
-        if cases > 0:
-            t_mins.append(t.min())
-            incidence.append(cases)
+        # Increment time interval for existing cases
+
+        still_infectious = new_infect_inds[(population_vector[new_infect_inds] == 1) &
+                                           (time_vector[new_infect_inds] < max_time)]
+        new_infections = new_infect_inds[(population_vector[new_infect_inds] == 0)]
+
+        g1 = np.random.standard_gamma(D / gamma_shape, size=len(new_infections))
+
+        # Increment time interval for new cases
+        g2 = np.random.standard_gamma(D / gamma_shape, size=len(still_infectious))
+
+        population_vector[new_infections] = 1
+
+        time_vector[new_infections] += g1
+        time_vector[still_infectious] = min_along_axis(time_vector[still_infectious] + g2,
+                                                       max_time * np.ones(len(still_infectious)))
+
+        if np.count_nonzero(population_vector) < population:
+            cumulative_incidence = np.count_nonzero(population_vector)
+
+            if cases > 0:
+                t_mins.append(steps)
+                incidence.append(cumulative_incidence)
+                steps += 1
+                cases = len(new_infections)
+        else:
+            break
 
     incidence = np.array(incidence)
-    epidemic_curve = incidence.cumsum()
-    t_mins = np.array(t_mins)
-    return t_mins, epidemic_curve
+    return np.arange(steps + 1), incidence, time_vector, population_vector
