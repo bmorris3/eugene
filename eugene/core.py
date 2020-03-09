@@ -177,10 +177,9 @@ def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
     return t_mins, epidemic_curve
 
 
-def compute(f_home_grid, max_community_spread_grid,
-            R0, k, trials, D_min, D_max, n_min, n_max, max_cases,
-            gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
-            days_elapsed_max, min_number_cases, max_number_cases,
+def compute(f_home_grid, max_community_spread,
+            R0, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
+            gamma_shape_min, gamma_shape_max, max_time,
             samples_path, people_per_household, population, **kwargs):
 
     final_size = []
@@ -189,7 +188,7 @@ def compute(f_home_grid, max_community_spread_grid,
 
     for i, f_home in enumerate(f_home_grid):
         final_size_i = []
-        for j, max_community_spread in enumerate(max_community_spread_grid):
+        for j, k in enumerate(k_grid):
             final_size_j = []
             for n in range(trials):
                 D = D_min + (D_max - D_min) * np.random.rand()
@@ -197,21 +196,13 @@ def compute(f_home_grid, max_community_spread_grid,
                 gamma_shape = (gamma_shape_min + (gamma_shape_max -
                                                   gamma_shape_min) *
                                np.random.rand())
-                days_elapsed = (max(days_elapsed_min) +
-                                (max(days_elapsed_max) - max(days_elapsed_min)
-                                 ) * np.random.rand())
 
                 ell = k * (f_home**2 + (1 - f_home)**2)
 
-                t_mins, cum_inc, t, p = simulate_outbreak_structured(R0, ell, n, D,
-                                                                     gamma_shape,
-                                                                     max_time,
-                                                                     days_elapsed,
-                                                                     max_cases,
-                                                                     f_home,
-                                                                     people_per_household,
-                                                                     max_community_spread,
-                                                                     population)
+                args = (R0, ell, n, D, max_time,
+                        max_cases, f_home, people_per_household,
+                        max_community_spread, population)
+                t_mins, cum_inc, t, p = simulate_outbreak_structured(*args)
 
                 final_size_j.append(cum_inc[-1]/population)
             final_size_i.append(final_size_j)
@@ -220,8 +211,8 @@ def compute(f_home_grid, max_community_spread_grid,
 
 
 @njit
-def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
-                                 days_elapsed_max, max_cases, f_home,
+def simulate_outbreak_structured(R0, k, n, D, max_time,
+                                 max_cases, f_home,
                                  people_per_household, max_community_spread,
                                  population, seed=None):
     """
@@ -302,7 +293,7 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
         secondary_home = sample_nbinom(n=k, p=k/(k + R0),
                                        size=n_cases_home)
 
-        # Draw household size from max(Poisson(3.1), 1):
+        # Draw household size from max(Poisson(lambda), 1):
         poisson_home = max_along_axis(np.random.poisson(people_per_household,
                                                         size=n_cases_home),
                                       np.ones(cases))
@@ -335,7 +326,6 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
         time_vector[new_infections] += g1
 
         # Increment time interval for existing cases
-        # print(time_vector[still_infectious], g2)
         time_vector[still_infectious] = min_along_axis(time_vector[still_infectious] + g2,
                                                        max_time * np.ones(len(still_infectious)))
 
