@@ -3,19 +3,32 @@ import matplotlib.pyplot as plt
 from corner import corner
 from glob import glob
 
+from eugene.core import grouper
 from grid_parallel import params
 
 f_home_grid = params['f_home_grid']
 max_community_spread_grid = params['max_community_spread_grid']
 trials = params['trials']
 
+blue_plot = True
 red_plot = False
-samples_plot = True
+samples_plot = False
 
-samples = np.vstack([np.load(p) for p in glob('samples/samples*.npy')])
+samples = np.vstack([np.load(p) for p in sorted(glob('samples/samples*.npy'))])
 
-# lo, mid, hi = np.percentile(samples[:, 0], [16, 50, 84])
-# print(f'R0 = {mid:.2f}_{{-{mid-lo:.2f}}}^{{+{hi-mid:.2f}}}')
+if blue_plot:
+    #print(np.array(list(grouper(params['f_home_grid'], params['n_grid_points_per_process'])))[:, 0])
+    fig, ax = plt.subplots(figsize=(5, 4))
+
+    X, Y = np.meshgrid(f_home_grid, max_community_spread_grid)
+
+    im = ax.pcolor(Y, X, np.median(samples, axis=-1).T,
+                   cmap=plt.cm.Blues)
+    cbar = plt.colorbar(im, label='Final size')
+
+    ax.set(xlabel='$N_{\\rm max}$', ylabel='$f_{\\rm home}$')
+    fig.savefig('plots/containment.pdf', bbox_inches='tight')
+    plt.show()
 
 if red_plot:
     hist2d, xedges, yedges = np.histogram2d(samples[:, 0],

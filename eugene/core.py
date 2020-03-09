@@ -181,26 +181,16 @@ def compute(f_home_grid, max_community_spread_grid,
             R0, k, trials, D_min, D_max, n_min, n_max, max_cases,
             gamma_shape_min, gamma_shape_max, max_time, days_elapsed_min,
             days_elapsed_max, min_number_cases, max_number_cases,
-            samples_path, people_per_household, population):
+            samples_path, people_per_household, population, **kwargs):
 
-    accepted_grid = []
-
-    D_chain = []
-    n_chain = []
-    f_home_chain = []
-    max_community_spread_chain = []
-    # R0_chain = []
-    # k_chain = []
-
-    days_elapsed_chain = []
-    gamma_shape_chain = []
+    final_size = []
 
     f_home_grid = np.array(f_home_grid)
 
     for i, f_home in enumerate(f_home_grid):
-        accept_k = []
+        final_size_i = []
         for j, max_community_spread in enumerate(max_community_spread_grid):
-            accepted = []
+            final_size_j = []
             for n in range(trials):
                 D = D_min + (D_max - D_min) * np.random.rand()
                 n = np.random.randint(n_min, n_max)
@@ -213,47 +203,20 @@ def compute(f_home_grid, max_community_spread_grid,
 
                 ell = k * (f_home**2 + (1 - f_home)**2)
 
-                t_mins, cum_inc = simulate_outbreak_structured(R0, ell, n, D,
-                                                               gamma_shape,
-                                                               max_time,
-                                                               days_elapsed,
-                                                               max_cases,
-                                                               f_home,
-                                                               people_per_household,
-                                                               max_community_spread,
-                                                               population)
+                t_mins, cum_inc, t, p = simulate_outbreak_structured(R0, ell, n, D,
+                                                                     gamma_shape,
+                                                                     max_time,
+                                                                     days_elapsed,
+                                                                     max_cases,
+                                                                     f_home,
+                                                                     people_per_household,
+                                                                     max_community_spread,
+                                                                     population)
 
-
-                if t_mins.max() > max(days_elapsed_max):
-                    # Outbreak is still ongoing
-                    accept = False
-                elif cum_inc.max() > max_cases:
-                    # Outbreak has tons of cases
-                    accept = False
-                else:
-                    # Outbreak has terminated:
-                    accept = True
-
-                if accept:
-                    D_chain.append(D)
-                    n_chain.append(n)
-                    f_home_chain.append(f_home)
-                    max_community_spread_chain.append(max_community_spread)
-                    days_elapsed_chain.append(days_elapsed)
-                    gamma_shape_chain.append(gamma_shape)
-
-            if len(accepted) > 0:
-                accepted_fraction = np.count_nonzero(accepted) / len(accepted)
-            else:
-                accepted_fraction = 0
-
-            accept_k.append(accepted_fraction)
-
-        accepted_grid.append(accept_k)
-
-    samples = np.vstack([f_home_chain, max_community_spread_chain, D_chain,
-                         n_chain, days_elapsed_chain, gamma_shape_chain]).T
-    np.save(samples_path.format(f_home_grid[0]), samples)
+                final_size_j.append(cum_inc[-1]/population)
+            final_size_i.append(final_size_j)
+        final_size.append(final_size_i)
+    np.save(samples_path.format(f_home_grid[0]), final_size)
 
 
 @njit
@@ -349,7 +312,7 @@ def simulate_outbreak_structured(R0, k, n, D, gamma_shape, max_time,
         secondary = np.sum(secondary_comm_min) + np.sum(secondary_home_min)
 
         # Infect new cases
-        new_infect_inds = np.random.choice(population, int(secondary),
+        new_infect_inds = np.random.choice(int(population), int(secondary),
                                            replace=False)
 
         # If already infected and generation time < `max_time`, add to

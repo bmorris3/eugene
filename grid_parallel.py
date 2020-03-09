@@ -3,7 +3,7 @@ from eugene import abc, compute
 
 params = dict(
     R0 = 2,
-    k = 1,
+    k = 10,
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
@@ -13,7 +13,7 @@ params = dict(
     max_time = 365,   # days
 
     # Number of stochastic trials to run at each grid-point
-    trials = 500,
+    trials = 100,
 
     # Days elapsed since zoonotic transmission
     days_elapsed_min = [46-7, 52-7],  # days
@@ -24,25 +24,28 @@ params = dict(
     max_number_cases = [5590, 9700],  # cases
 
     # Initial number of index cases n (day-zero cases)
-    n_min = 1,   # cases
+    n_min = 10,   # cases
     n_max = 50,  # cases
 
     # Generation interval/Gamma function shape parameter
-    gamma_shape_min = 1,
-    gamma_shape_max = 5,
+    gamma_shape_min = 1.5,
+    gamma_shape_max = 3,
 
     # Generation time interval D
-    D_min = 7,   # days
-    D_max = 14,  # days
+    D_min = 3,   # days
+    D_max = 11,  # days
 
     # Fraction of transmissions that occur at home, f_home:
-    f_home_grid = np.linspace(0.2, 0.9, 15),
+    f_home_grid = np.linspace(0.05, 0.95, 20),
 
     # Average number of people per household
-    people_per_household = 3.1,
+    people_per_household = 2.2,
 
     # Maximum superspreading event size
-    max_community_spread_grid = np.arange(1, 25, 1),
+    max_community_spread_grid = np.arange(1, 50, 1),
+
+    # Population size
+    population = 1e5,
 
     # Computer parameters
     n_processes = 16,
