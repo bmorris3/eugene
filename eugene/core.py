@@ -3,15 +3,30 @@ from itertools import zip_longest
 from concurrent import futures as cf
 
 import numpy as np
-from scipy.stats import gamma, nbinom
 from numba import njit
 
-__all__ = ['abc', 'compute', 'simulate_outbreak',
-           'simulate_outbreak_structured']
+__all__ = ['batch', 'compute', 'simulate_outbreak_structured']
 
 
 @njit
 def sample_nbinom(n, p, size):
+    """
+    Draw random samples from the negative binomial distribution.
+
+    Parameters
+    ----------
+    n : float
+        Number of trials
+    p : float
+        Probability of success on (0, 1)
+    size : int
+        Number of samples to draw from negative binomial distribution
+
+    Returns
+    -------
+    nb : `~numpy.ndarray`
+        Draws from the negative binomial distribution
+    """
     nb = np.zeros(size)
     for i in range(size):
         nb[i] = np.random.poisson(np.random.gamma(n, (1 - p) / p))
@@ -19,6 +34,9 @@ def sample_nbinom(n, p, size):
 
 @njit
 def min_along_axis(a, b):
+    """
+    Take the minimum along the first axis of each array ``a`` and ``b``.
+    """
     mins = []
     for i, j in zip(a, b):
         mins.append(min([i, j]))
@@ -27,6 +45,9 @@ def min_along_axis(a, b):
 
 @njit
 def max_along_axis(a, b):
+    """
+    Take the maximum along the first axis of each array ``a`` and ``b``.
+    """
     maxes = []
     for i, j in zip(a, b):
         maxes.append(max([i, j]))
@@ -45,7 +66,21 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def abc(n_processes, f_home_grid, n_grid_points_per_process, **parameters):
+def batch(n_processes, f_home_grid, n_grid_points_per_process, **parameters):
+    """
+    Run the `~eugene.compute` function in parallel.
+
+    Parameters
+    ----------
+    n_processes : int
+        Number of parallel processes to initialize
+    f_home_grid : `~numpy.ndarray`
+        Grid of ``f_home`` values to iterate over
+    n_grid_points_per_process : int
+        Number of ``f_home`` grid points to compute for each process
+    parameters : dict
+        Remaining parameters to pass to the `~eugene.compute` function
+    """
     # https://stackoverflow.com/a/15143994
     executor = cf.ProcessPoolExecutor(max_workers=n_processes)
     futures = [executor.submit(compute, group, **parameters)
@@ -76,6 +111,8 @@ def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     cumulative_incidence : `~numpy.ndarray`
         Cumulative incidence (total cases) at each time
     """
+    from scipy.stats import gamma, nbinom
+
     times = n * [0]
     cumulative_incidence = copy(n)
     t = np.array(times)
@@ -109,79 +146,15 @@ def simulate_outbreak_slow(R0, k, n, D, gamma_shape, max_time, days_elapsed_max,
     return t_mins, epidemic_curve
 
 
-@njit
-def simulate_outbreak(R0, k, n, D, gamma_shape, max_time,
-                      days_elapsed_max,
-                      max_cases, seed=None):
-    """
-    Simulate an outbreak.
-
-    Parameters
-    ----------
-    R0 : float
-
-    k : float
-
-    n : float
-
-    D : float
-
-    gamma_shape : float
-
-    max_time : float
-
-    days_elapsed_max : float
-
-    max_cases : float
-
-    seed : int
-
-    Returns
-    -------
-    times : `~numpy.ndarray`
-        Times of incidence measurements
-    cumulative_incidence : `~numpy.ndarray`
-        Cumulative incidence (total cases) at each time
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    cumulative_incidence = int(n)
-    t = np.zeros(n)
-    cases = int(n)
-    incidence = [n]
-    t_mins = [0]
-
-    while (cases > 0) and (t.min() < days_elapsed_max) and (
-            cumulative_incidence < max_cases):
-        secondary = sample_nbinom(n=k, p=k/(k+R0), size=cases)
-
-        inds = np.arange(0, secondary.max())
-        gamma_size = (secondary.shape[0], secondary.max())
-
-        g = np.random.standard_gamma(D / gamma_shape, size=gamma_size)
-        t_new = np.expand_dims(t, 1) + g
-        mask = np.expand_dims(secondary, 1) <= inds
-        times_in_bounds = ((t_new < max_time) &
-                           np.logical_not(mask))
-        cases = np.count_nonzero(times_in_bounds)
-        cumulative_incidence += cases
-
-        t = t_new.ravel()[times_in_bounds.ravel()].copy()
-        if cases > 0:
-            t_mins.append(t.min())
-            incidence.append(cases)
-
-    incidence = np.array(incidence)
-    epidemic_curve = incidence.cumsum()
-    t_mins = np.array(t_mins)
-    return t_mins, epidemic_curve
-
-
 def compute(f_home_grid, max_community_spread,
-            R0, k_grid, trials, D_min, D_max, n_min, n_max, max_cases,
-            gamma_shape_min, gamma_shape_max, max_time,
+            R0, k_grid, trials, D_min, D_max, n_min, n_max, max_cases, max_time,
             samples_path, people_per_household, population, **kwargs):
+    """
+    Compute the final size of a grid of epidemics.
 
+    The grid is defined by ``f_home_grid`` and ``k_grid``. This function is
+    designed to be called by the `~eugene.abc` function.
+    """
     final_size = []
 
     f_home_grid = np.array(f_home_grid)
@@ -193,9 +166,6 @@ def compute(f_home_grid, max_community_spread,
             for n in range(trials):
                 D = D_min + (D_max - D_min) * np.random.rand()
                 n = np.random.randint(n_min, n_max)
-                gamma_shape = (gamma_shape_min + (gamma_shape_max -
-                                                  gamma_shape_min) *
-                               np.random.rand())
 
                 ell = k * (f_home**2 + (1 - f_home)**2)
 
@@ -221,34 +191,27 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
     Parameters
     ----------
     R0 : float
-
+        Reproduction number
     k : float
-
+        Overdispersion factor
     n : float
-
+        Number of index cases
     D : float
-
-    gamma_shape : float
-
+        Generation time interval (Gamma distribution shape parameter)
     max_time : float
-
-    days_elapsed_max : float
-
+        Maximum infectious time
     max_cases : float
-
+        Maximum number of cases (usually equal to ``population``)
     f_home : float
         Fraction of cases that occur at home
-
     people_per_household : float
         Number of people in each household
-
     max_community_spread : int
         Maximum number of secondary cases from a single spreading event
-
-    seed : int
-
     population : int
         Total population size
+    seed : int (optional)
+        Random seed
 
     Returns
     -------
@@ -302,17 +265,19 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
 
         secondary = np.sum(secondary_comm_min) + np.sum(secondary_home_min)
 
-        # Infect new cases
+        # Infect new cases by randomly drawing from indices from population
         new_infect_inds = np.random.choice(int(population), int(secondary),
                                            replace=False)
 
         # If already infected and generation time < `max_time`, add to
         # `still_infectious` index array
-        still_infectious = new_infect_inds[(population_vector[new_infect_inds] == 1) &
-                                           (time_vector[new_infect_inds] < max_time)]
+        still_infections_inds = ((population_vector[new_infect_inds] == 1) &
+                                 (time_vector[new_infect_inds] < max_time))
+        still_infectious = new_infect_inds[still_infections_inds]
 
         # If newly infected, add to `new_infections` index array
-        new_infections = new_infect_inds[(population_vector[new_infect_inds] == 0)]
+        new_infections_inds = (population_vector[new_infect_inds] == 0)
+        new_infections = new_infect_inds[new_infections_inds]
 
         # Compute generation time interval for the new infections and the
         # already infected
@@ -326,8 +291,9 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
         time_vector[new_infections] += g1
 
         # Increment time interval for existing cases
-        time_vector[still_infectious] = min_along_axis(time_vector[still_infectious] + g2,
-                                                       max_time * np.ones(len(still_infectious)))
+        time_min_args = (time_vector[still_infectious] + g2,
+                         max_time * np.ones(len(still_infectious)))
+        time_vector[still_infectious] = min_along_axis(*time_min_args)
 
         # Cumulative incidence is the number of ones in `population_vector`
         cumulative_incidence = np.count_nonzero(population_vector)
