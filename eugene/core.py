@@ -223,8 +223,8 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
     if seed is not None:
         np.random.seed(seed)
 
-    # `population_vector` is a binary vector representing the infectious state
-    # of every person in the population (0=healthy, 1=infected)
+    # `population_vector` is a ternary vector representing the infectious state
+    # of every person in the population (0=healthy, 1=infected, 2=recovered)
     population_vector = np.zeros(int(population))
 
     # `time_vector` tracks how long a person is infections, and only allows them
@@ -234,7 +234,7 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
 
     # Seed population with `n` index cases
     population_vector[:n] = 1
-    time_vector[:n] = 0.01
+    time_vector[:n] = D
 
     cumulative_incidence = int(n)
     cases = int(n)
@@ -242,18 +242,20 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
     t_mins = [0]
     steps = 0
 
-    while (cases > 0) and (cumulative_incidence < max_cases):
-        n_cases_home = int(cases * f_home) + 1
+    while (np.count_nonzero(population_vector) < population) and (
+            cumulative_incidence < max_cases) and (cases > 0):
+
+        n_cases_home = int(cases * f_home)
         n_cases_comm = cases - n_cases_home
 
-        secondary_comm = sample_nbinom(n=k, p=k/(k + R0),
+        secondary_comm = sample_nbinom(n=k, p=k / (k + R0),
                                        size=n_cases_comm)
 
         # impose maximum on number of secondary cases from single primary:
         secondary_comm_min = min_along_axis(secondary_comm, np.ones(cases) *
                                             int(max_community_spread))
 
-        secondary_home = sample_nbinom(n=k, p=k/(k + R0),
+        secondary_home = sample_nbinom(n=k, p=k / (k + R0),
                                        size=n_cases_home)
 
         # Draw household size from max(Poisson(lambda), 1):
@@ -266,43 +268,34 @@ def simulate_outbreak_structured(R0, k, n, D, max_time,
         secondary = np.sum(secondary_comm_min) + np.sum(secondary_home_min)
 
         # Infect new cases by randomly drawing from indices from population
-        new_infect_inds = np.random.choice(int(population), int(secondary),
+        new_infect_inds = np.random.choice(int(population),
+                                           min([int(secondary),
+                                                int(population)]),
                                            replace=False)
 
-        # If already infected and generation time < `max_time`, add to
-        # `still_infectious` index array
-        still_infections_inds = ((population_vector[new_infect_inds] == 1) &
-                                 (time_vector[new_infect_inds] < max_time))
-        still_infectious = new_infect_inds[still_infections_inds]
-
         # If newly infected, add to `new_infections` index array
-        new_infections_inds = (population_vector[new_infect_inds] == 0)
-        new_infections = new_infect_inds[new_infections_inds]
+        new_infections = new_infect_inds[(population_vector[new_infect_inds] ==
+                                          0)]
 
         # Compute generation time interval for the new infections and the
         # already infected
         g1 = np.random.standard_gamma(D, size=len(new_infections))
-        g2 = np.random.standard_gamma(D, size=len(still_infectious))
+
+        # Recover the last generation of infected people
+        population_vector[population_vector == 1] += 1
 
         # Infect the newly infected
         population_vector[new_infections] = 1
 
         # Increment time interval for new cases
-        time_vector[new_infections] += g1
-
-        # Increment time interval for existing cases
-        time_min_args = (time_vector[still_infectious] + g2,
-                         max_time * np.ones(len(still_infectious)))
-        time_vector[still_infectious] = min_along_axis(*time_min_args)
+        time_vector[new_infections] = g1
 
         # Cumulative incidence is the number of ones in `population_vector`
         cumulative_incidence = np.count_nonzero(population_vector)
-
-        if cases > 0:
-            t_mins.append(steps)
-            incidence.append(cumulative_incidence)
-            steps += 1
-            cases = len(new_infections)
+        cases = np.count_nonzero(population_vector == 1)
+        t_mins.append(steps)
+        incidence.append(cumulative_incidence)
+        steps += 1
 
     incidence = np.array(incidence)
     return np.arange(steps + 1), incidence, time_vector, population_vector

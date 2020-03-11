@@ -1,9 +1,9 @@
 import numpy as np
-from eugene import abc, compute
+from eugene import batch, compute
 
 params = dict(
     R0 = 2,
-    k_grid = np.logspace(-1, 1, 20),
+    k_grid = np.logspace(np.log10(0.005), np.log10(2), 100),
 
     # Maximum number of cases to run the simulation through (should be greater
     # than ``max_number_cases``)
@@ -34,7 +34,7 @@ params = dict(
     people_per_household = 2.2,
 
     # Maximum super-spreading event size
-    max_community_spread = 50,
+    max_community_spread = 1000,
 
     # Population size
     population = 1e5,
@@ -52,5 +52,5 @@ if __name__ == '__main__':
                     params['k_grid'].shape[0])
     print(f'Total number of simulations triggered: {total_trials}')
 
-    abc(**params)
+    batch(**params)
     # compute(**params)
