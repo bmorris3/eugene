@@ -13,7 +13,7 @@ params = dict(
     max_time = 365,   # days
 
     # Number of stochastic trials to run at each grid-point
-    trials = 100,
+    trials = 1000,
 
     # Initial number of index cases n (day-zero cases)
     n_min = 10,   # cases
@@ -28,7 +28,7 @@ params = dict(
     D_max = 11,  # days
 
     # Fraction of transmissions that occur at home, f_home:
-    f_home_grid = np.linspace(0.5, 0.95, 20),
+    f_home_grid = np.linspace(0.5, 0.95, 50),
 
     # Average number of people per household
     people_per_household = 2.2,
@@ -40,7 +40,7 @@ params = dict(
     population = 1e5,
 
     # Computer parameters
-    n_processes = 8,
+    n_processes = 16,
     n_grid_points_per_process = 1,
 
     # Formatting string for naming simulation outputs
