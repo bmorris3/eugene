@@ -30,7 +30,7 @@ more information.
 Contributing
 ------------
 
-We love contributions! fleck is open source, built on open source, and we'd love
+We love contributions! eugene is open source, built on open source, and we'd love
 to have you in our community. To contribute to ``eugene``, please follow the
 `Astropy dev guidelines
 <https://docs.astropy.org/en/stable/development/workflow/development_workflow.html>`_
